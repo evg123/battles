@@ -4,8 +4,8 @@ Main class with game loop
 
 import pygame
 
-from .util import FrameTimer
-from .soldier import Soldier
+from src.util import FrameTimer
+from src.soldier import Soldier
 
 
 class Battles(object):
@@ -53,4 +53,5 @@ class Battles(object):
 
 if __name__ == "__main__":
     prog = Battles()
+    prog.setup()
     prog.run()
