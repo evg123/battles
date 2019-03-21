@@ -8,9 +8,10 @@ from src.util import FrameTimer
 from src.soldier import Soldier
 
 
-class Battles(object):
+class Battles:
 
-    SCREEN_SIZE = [1280, 720]
+    SCREEN_SIZE = (1280, 720)
+    BACKGROUND_COLOR = (200, 200, 200)
 
     def __init__(self):
         pygame.init()
@@ -20,11 +21,11 @@ class Battles(object):
 
     def setup(self):
         sld = Soldier()
-        sld.moveTo(100, 300)
+        sld.move_to(100, 300)
         self.soldiers.append(sld)
 
         sld = Soldier()
-        sld.moveTo(500, 300)
+        sld.move_to(500, 300)
         self.soldiers.append(sld)
 
     def run(self):
@@ -59,6 +60,8 @@ class Battles(object):
         self.soldiers = [sld for sld in self.soldiers if not sld.needs_removal()]
 
     def draw(self):
+        self.window.fill(Battles.BACKGROUND_COLOR)
+
         for sld in self.soldiers:
             sld.draw(self.window)
 

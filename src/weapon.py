@@ -2,11 +2,12 @@
 Classes representing weapons like a sword or bow
 """
 
+import math
 import pygame
-import src.util
+import src.util as util
 
 
-class Weapon(object):
+class Weapon:
     """Abstract base class"""
 
     def __init__(self):
@@ -22,11 +23,12 @@ class Weapon(object):
     def update(self, delta):
         pass
 
-    def draw(self):
+    def draw(self, window):
         raise NotImplementedError()
 
     def update_wielder_pos(self, xpos, ypos):
-        raise NotImplementedError()
+        self.xpos = xpos
+        self.ypos = ypos
 
     def activate(self):
         pass
@@ -47,13 +49,16 @@ class Sword(Weapon):
     START_DIST_OFFSET = 0
     FINAL_DIST_OFFSET = 20
     START_ANGLE_OFFSET = 0
+    COLOR = (128, 128, 128)
 
     def __init__(self):
-        super(Weapon, self).__init__()
+        super(Sword, self).__init__()
         self.pos_speed = 1000
         self.angle_speed = 360
         self.damage = 30
         self.swing_time = Sword.INACTIVE
+        self.length = 10
+        self.width = 2
 
         # Offset from wielder
         self.dist_offset = 0
@@ -83,7 +88,11 @@ class Sword(Weapon):
         self.swing_time += delta
 
     def draw(self, window):
-        pygame.draw.line(window, Sword.COLOR, , , width = 2)
+        xnorm, ynorm = self.get_angle_normal()
+        start_pos = [self.xpos + xnorm * self.dist_offset, self.ypos + ynorm * self.dist_offset]
+        end_pos = [self.xpos + xnorm * (self.dist_offset + self.length),
+                   self.ypos + ynorm * (self.dist_offset + self.length)]
+        pygame.draw.line(window, Sword.COLOR, start_pos, end_pos, self.width)
 
     def activate(self):
         self.swing_time = Sword.START
@@ -91,6 +100,16 @@ class Sword(Weapon):
     def deactivate(self):
         self.swing_time = Sword.INACTIVE
 
+    def hits_circle(self, other_xpos, other_ypos, other_radius):
+        xnorm, ynorm = self.get_angle_normal()
+        end_pos = [self.xpos + xnorm * (self.dist_offset + self.length),
+                   self.ypos + ynorm * (self.dist_offset + self.length)]
+        dist = util.distance(end_pos[0], end_pos[1], other_xpos, other_ypos)
+        return dist <= other_radius
+
+    def get_angle_normal(self):
+        rads = math.radians(self.angle + self.angle_offset)
+        return math.cos(rads), math.sin(rads)
 
 
 

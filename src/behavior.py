@@ -15,7 +15,7 @@ class Blackboard(dict):
         return parent.get(sid, None)
 
 
-class BehaviorTree(object):
+class BehaviorTree:
     _blackboard = Blackboard()
 
     def __init__(self):
@@ -26,7 +26,7 @@ class BehaviorTree(object):
             return True
         return self.root.run(my_id, delta)
 
-    class Node(object):
+    class Node:
 
         @staticmethod
         def board():

@@ -2,14 +2,16 @@
 Class representing a soldier
 """
 import pygame
-import src.util
+import src.util as util
+from src.weapon import Sword
 from src.behavior import BehaviorTree
 
 
-class Soldier(object):
+class Soldier:
 
     DEFAULT_RADIUS = 10
-    DEFAULT_COLOR = [255, 255, 255]
+    DEFAULT_COLOR = (255, 255, 255)
+    DEFAULT_CLEANUP_TIME = 10
 
     MAX_HEALTH = 100
     HEALING_FACTOR = 1.0
@@ -28,12 +30,17 @@ class Soldier(object):
         self.ypos = 0
         self.radius = Soldier.DEFAULT_RADIUS
         self.color = Soldier.DEFAULT_COLOR
-
         self.health = Soldier.MAX_HEALTH
+        self.cleanup_timer = Soldier.DEFAULT_CLEANUP_TIME
         self.behavior_tree = BehaviorTree()
-        self.weapon = None
+        self.weapon = Sword()
+        self.weapon.update_wielder_pos(self.xpos, self.ypos)
 
     def update(self, delta):
+        # Countdown to removal if needed
+        if not self.is_alive():
+            self.cleanup_timer -= delta
+
         # Slow healing over time
         self.heal(Soldier.HEALING_FACTOR * delta)
 
@@ -51,18 +58,17 @@ class Soldier(object):
     def draw(self, window):
         pygame.draw.circle(window, self.color, [self.xpos, self.ypos], self.radius)
 
-        for wp in self.weapons:
-            wp.draw()
+        self.weapon.draw(window)
 
-    def moveTo(self, new_x, new_y):
+    def move_to(self, new_x, new_y):
         self.xpos = new_x
         self.ypos = new_y
         # Update weapon positions
         if self.weapon:
-            self.weapon.update_weilder_pos(self.xpos, self.ypos)
+            self.weapon.update_wielder_pos(self.xpos, self.ypos)
 
-    def moveOffset(self, xoff, yoff):
-        self.moveTo(self.xpos + xoff, self.ypos + yoff)
+    def move_offset(self, xoff, yoff):
+        self.move_to(self.xpos + xoff, self.ypos + yoff)
 
     def heal(self, amount):
         self.health += amount
@@ -73,7 +79,12 @@ class Soldier(object):
         self.health -= damage
 
     def overlaps(self, xpos, ypos):
-        dist = src.util.distance(self.xpos, self.ypos, xpos, ypos)
+        dist = util.distance(self.xpos, self.ypos, xpos, ypos)
         return dist <= self.radius
 
+    def is_alive(self):
+        return self.health > 0
+
+    def needs_removal(self):
+        return not self.is_alive() and self.cleanup_timer < 0
 
