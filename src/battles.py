@@ -38,11 +38,25 @@ class Battles(object):
                     self._running = False
 
             self.update(delta)
+            self.handle_interactions()
+            self.clean_up()
             self.draw()
 
     def update(self, delta):
         for sld in self.soldiers:
             sld.update(delta)
+
+    def handle_interactions(self):
+        #TODO optimize
+        for sld1 in self.soldiers:
+            for sld2 in self.soldiers:
+                if sld1 == sld2:
+                    continue
+                sld1.interact(sld2)
+
+    def clean_up(self):
+        # Remove fully gone soldiers
+        self.soldiers = [sld for sld in self.soldiers if not sld.needs_removal()]
 
     def draw(self):
         for sld in self.soldiers:
