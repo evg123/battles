@@ -42,7 +42,7 @@ class Soldier:
         self.color = Soldier.DEFAULT_COLOR
         self.health = Soldier.MAX_HEALTH
         self.cleanup_timer = Soldier.DEFAULT_CLEANUP_TIME
-        self.behavior_tree = BehaviorTree()
+        self.behavior_tree = BehaviorTree("swordsman")
         self.weapon = Sword()
         self.weapon.update_wielder_pos(self.pos)
 

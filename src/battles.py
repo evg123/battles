@@ -37,8 +37,8 @@ class Battles:
         while self._running:
             delta = frame_timer.next_frame()
 
-            for ev in pygame.event.get():
-                if ev.type == pygame.QUIT or (ev.type == pygame.KEYUP and ev.key == pygame.K_ESCAPE):
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT or (event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE):
                     self._running = False
 
             self.update(delta)
@@ -75,6 +75,6 @@ class Battles:
 
 
 if __name__ == "__main__":
-    prog = Battles()
-    prog.setup()
-    prog.run()
+    BT = Battles()
+    BT.setup()
+    BT.run()
