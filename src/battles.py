@@ -6,27 +6,30 @@ import pygame
 
 from src.util import FrameTimer
 from src.soldier import Soldier
+from src.behavior import BehaviorTree, Blackboard
 
 
 class Battles:
 
     SCREEN_SIZE = (1280, 720)
-    BACKGROUND_COLOR = (200, 200, 200)
+    BACKGROUND_COLOR = (100, 100, 100)
 
     def __init__(self):
         pygame.init()
         self.window = pygame.display.set_mode(Battles.SCREEN_SIZE)
         self._running = True
-        self.soldiers = []
+        self.soldiers = {}
 
     def setup(self):
-        sld = Soldier()
-        sld.move_to(100, 300)
-        self.soldiers.append(sld)
+        sldr = Soldier()
+        sldr.army_id = 1
+        sldr.move_to_coords(100, 300)
+        self.soldiers[sldr.my_id] = sldr
 
-        sld = Soldier()
-        sld.move_to(500, 300)
-        self.soldiers.append(sld)
+        sldr = Soldier()
+        sldr.army_id = 2
+        sldr.move_to_coords(500, 300)
+        self.soldiers[sldr.my_id] = sldr
 
     def run(self):
         frame_timer = FrameTimer()
@@ -44,26 +47,29 @@ class Battles:
             self.draw()
 
     def update(self, delta):
-        for sld in self.soldiers:
-            sld.update(delta)
+        # Refresh blackboard shared data
+        BehaviorTree.board()[Blackboard.SOLDIERS] = self.soldiers
+
+        for sldr in self.soldiers.values():
+            sldr.update(delta)
 
     def handle_interactions(self):
         #TODO optimize
-        for sld1 in self.soldiers:
-            for sld2 in self.soldiers:
-                if sld1 == sld2:
+        for sldr1 in self.soldiers.values():
+            for sldr2 in self.soldiers.values():
+                if sldr1 == sldr2:
                     continue
-                sld1.interact(sld2)
+                sldr1.interact(sldr2)
 
     def clean_up(self):
         # Remove fully gone soldiers
-        self.soldiers = [sld for sld in self.soldiers if not sld.needs_removal()]
+        self.soldiers = {sid: sldr for sid, sldr in self.soldiers.items() if not sldr.needs_removal()}
 
     def draw(self):
         self.window.fill(Battles.BACKGROUND_COLOR)
 
-        for sld in self.soldiers:
-            sld.draw(self.window)
+        for sldr in self.soldiers.values():
+            sldr.draw(self.window)
 
         pygame.display.update()
 

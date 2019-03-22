@@ -2,9 +2,8 @@
 Classes representing weapons like a sword or bow
 """
 
-import math
 import pygame
-import src.util as util
+from pygame import Vector2
 
 
 class Weapon:
@@ -12,8 +11,7 @@ class Weapon:
 
     def __init__(self):
         # Position of the weapon wielder
-        self.xpos = 0
-        self.ypos = 0
+        self.pos = Vector2()
 
         # Angle relative to wielder
         self.angle = 0
@@ -26,9 +24,9 @@ class Weapon:
     def draw(self, window):
         raise NotImplementedError()
 
-    def update_wielder_pos(self, xpos, ypos):
-        self.xpos = xpos
-        self.ypos = ypos
+    def update_wielder_pos(self, pos):
+        self.pos.x = pos.x
+        self.pos.y = pos.y
 
     def activate(self):
         pass
@@ -36,7 +34,7 @@ class Weapon:
     def deactivate(self):
         pass
 
-    def hits_circle(self, other_xpos, other_ypos, other_radius):
+    def hits_circle(self, other_pos, other_radius):
         raise NotImplementedError()
 
 
@@ -47,18 +45,18 @@ class Sword(Weapon):
     FINISHED = 0.75
 
     START_DIST_OFFSET = 0
-    FINAL_DIST_OFFSET = 20
+    FINAL_DIST_OFFSET = 10
     START_ANGLE_OFFSET = 0
     COLOR = (128, 128, 128)
 
     def __init__(self):
         super(Sword, self).__init__()
-        self.pos_speed = 1000
-        self.angle_speed = 360
+        self.pos_speed = 600
+        self.angle_speed = 500
         self.damage = 30
         self.swing_time = Sword.INACTIVE
-        self.length = 10
-        self.width = 2
+        self.length = 20
+        self.width = 5
 
         # Offset from wielder
         self.dist_offset = 0
@@ -88,10 +86,10 @@ class Sword(Weapon):
         self.swing_time += delta
 
     def draw(self, window):
-        xnorm, ynorm = self.get_angle_normal()
-        start_pos = [self.xpos + xnorm * self.dist_offset, self.ypos + ynorm * self.dist_offset]
-        end_pos = [self.xpos + xnorm * (self.dist_offset + self.length),
-                   self.ypos + ynorm * (self.dist_offset + self.length)]
+        norm = Vector2(0, 1)
+        norm.rotate_ip(self.angle + self.angle_offset)
+        start_pos = self.pos + norm * self.dist_offset
+        end_pos = self.pos + norm * (self.dist_offset + self.length)
         pygame.draw.line(window, Sword.COLOR, start_pos, end_pos, self.width)
 
     def activate(self):
@@ -100,16 +98,13 @@ class Sword(Weapon):
     def deactivate(self):
         self.swing_time = Sword.INACTIVE
 
-    def hits_circle(self, other_xpos, other_ypos, other_radius):
-        xnorm, ynorm = self.get_angle_normal()
-        end_pos = [self.xpos + xnorm * (self.dist_offset + self.length),
-                   self.ypos + ynorm * (self.dist_offset + self.length)]
-        dist = util.distance(end_pos[0], end_pos[1], other_xpos, other_ypos)
+    def hits_circle(self, other_pos, other_radius):
+        norm = Vector2(0, 1)
+        norm.rotate_ip(self.angle + self.angle_offset)
+        end_pos = self.pos + norm * (self.dist_offset + self.length)
+        dist = other_pos.distance_to(end_pos)
         return dist <= other_radius
 
-    def get_angle_normal(self):
-        rads = math.radians(self.angle + self.angle_offset)
-        return math.cos(rads), math.sin(rads)
 
 
 
