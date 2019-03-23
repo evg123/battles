@@ -5,6 +5,7 @@ Main class with game loop
 import pygame
 
 from src.util import FrameTimer
+from src.army import Army
 from src.soldier import Soldier
 from src.behavior import BehaviorTree, Blackboard
 
@@ -18,18 +19,25 @@ class Battles:
         pygame.init()
         self.window = pygame.display.set_mode(Battles.SCREEN_SIZE)
         self._running = True
+        self.armies = {}
         self.soldiers = {}
 
     def setup(self):
+        army = Army()
         sldr = Soldier()
-        sldr.army_id = 1
-        sldr.move_to_coords(100, 300)
+        army.add_soldier(sldr)
+        sldr.move_to_coords(200, 250)
+        self.armies[army.my_id] = army
         self.soldiers[sldr.my_id] = sldr
+        army.set_waypoint(1080, 400)
 
+        army = Army()
         sldr = Soldier()
-        sldr.army_id = 2
-        sldr.move_to_coords(500, 300)
+        army.add_soldier(sldr)
+        sldr.move_to_coords(1080, 350)
+        self.armies[army.my_id] = army
         self.soldiers[sldr.my_id] = sldr
+        army.set_waypoint(200, 200)
 
     def run(self):
         frame_timer = FrameTimer()
@@ -49,6 +57,7 @@ class Battles:
     def update(self, delta):
         # Refresh blackboard shared data
         BehaviorTree.board()[Blackboard.SOLDIERS] = self.soldiers
+        BehaviorTree.board()[Blackboard.ARMIES] = self.armies
 
         for sldr in self.soldiers.values():
             sldr.update(delta)

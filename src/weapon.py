@@ -93,7 +93,8 @@ class Sword(Weapon):
         pygame.draw.line(window, Sword.COLOR, start_pos, end_pos, self.width)
 
     def activate(self):
-        self.swing_time = Sword.START
+        if self.swing_time == Sword.INACTIVE:
+            self.swing_time = Sword.START
 
     def deactivate(self):
         self.swing_time = Sword.INACTIVE

@@ -1,0 +1,11 @@
+["Sequence",
+    "TargetEnemy",
+    "AimTarget",
+    ["Selector",
+        ["Sequence",
+            "TargetInRange",
+            "Attack"
+        ],
+        "ArriveTarget"
+    ]
+]
