@@ -31,8 +31,8 @@ class Soldier:
         self.pos = Vector2()
         self.velocity = Vector2()
         self.velocity_steering = Vector2()
-        self.max_velocity = 100 #TODO remove default after subclassing
-        self.max_vel_accel = 10 #TODO remove default after subclassing
+        self.max_velocity = 10 #TODO remove default after subclassing
+        self.max_vel_accel = 1 #TODO remove default after subclassing
         self.facing = 0
         self.rotation = 0
         self.rotation_steering = 0
@@ -45,6 +45,8 @@ class Soldier:
         self.behavior_tree = BehaviorTree("swordsman")
         self.weapon = Sword()
         self.weapon.update_wielder_pos(self.pos)
+        self.sight_range = 150
+        self.attack_range = 25
 
     def update(self, delta):
         # Countdown to removal if needed
@@ -55,7 +57,7 @@ class Soldier:
         self.heal(Soldier.HEALING_FACTOR * delta)
 
         self.reset_steering()
-        self.behavior_tree.run(self.my_id, delta)
+        self.behavior_tree.run(self, delta)
         self.handle_steering()
 
         if self.weapon:
@@ -134,4 +136,9 @@ class Soldier:
 
     def needs_removal(self):
         return not self.is_alive() and self.cleanup_timer < 0
+
+    def attack(self):
+        if self.weapon:
+            self.weapon.activate()
+
 

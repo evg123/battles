@@ -3,6 +3,7 @@ Implementation of behavior trees
 """
 
 import json
+from pygame import Vector2
 
 
 class InvalidBehaviorTree(Exception):
@@ -13,12 +14,14 @@ class Blackboard:
     SOLDIERS = "soldiers"
     ARMIES = "armies"
     TARGET = "target"
+    WAYPOINT = "waypoint"
 
     def __init__(self):
         self._bb = {
             Blackboard.SOLDIERS: {},
             Blackboard.ARMIES: {},
             Blackboard.TARGET: {},
+            Blackboard.WAYPOINT: {},
         }
 
     def __getitem__(self, item):
@@ -37,7 +40,7 @@ class Blackboard:
 class TreeLoader:
     @staticmethod
     def file_path_from_name(tree_name):
-        return f"./behavior_trees/{tree_name}.json"
+        return f"./behaviors/{tree_name}.json"
 
     @staticmethod
     def node_from_string(node_type_name):
@@ -65,7 +68,7 @@ class TreeLoader:
             # This node is a composite
             ntype = bt_json[0]
             node = TreeLoader.node_from_string(ntype)
-            for child_json in bt_json[0:]:
+            for child_json in bt_json[1:]:
                 child = TreeLoader.load_from_json(child_json)
                 node.add_child(child)
             return node
@@ -94,102 +97,157 @@ class BehaviorTree:
     def __init__(self, file_path):
         self.root = TreeLoader.load_from_file(file_path)
 
-    def run(self, my_id, delta):
+    def run(self, soldier, delta):
         if self.root is None:
             return True
-        return self.root.run(my_id, delta)
+        return self.root.run(soldier, delta)
 
-    class Node:
+    @staticmethod
+    def _arrive(soldier, destination, slow_radius, stop_radius):
+        direction = destination - soldier.pos
+        dist = direction.length()
+        if dist < stop_radius:
+            goal_speed = 0
+        else:
+            direction.normalize_ip()
+            if dist > slow_radius:
+                goal_speed = soldier.max_velocity
+            else:
+                goal_speed = soldier.max_velocity * dist / slow_radius
+        goal_velocity = direction * goal_speed
+        soldier.add_velocity_steering(goal_velocity - soldier.velocity)
+        return True
+
+    @staticmethod
+    def _aim(soldier, destination, slow_radius, stop_radius):
+        direction = destination - soldier.pos
+        facing = Vector2(0, 1)
+        facing.rotate_ip(soldier.facing)
+        rotation = direction.angle_to(facing)
+        if rotation > 180:
+            rotation -= 360
+        elif rotation < -180:
+            rotation += 360
+
+        rot_size = abs(rotation)
+        if rot_size < stop_radius:
+            goal_rot = 0
+        elif rot_size > slow_radius:
+            goal_rot = soldier.max_rotation
+        else:
+            goal_rot = soldier.max_rotation * rot_size / slow_radius
+
+        goal_rot *= rotation / rot_size
+        soldier.add_rotation_steering(goal_rot - soldier.rotation)
+        return True
+
+    class LeafNode:
+        def run(self, soldier, delta):
+            raise NotImplementedError()
+
+        def add_child(self, child):
+            raise InvalidBehaviorTree(f"{self.__class__} does not support adding children")
+
+    class CompositeNode:
         def __init__(self):
             self.children = []
 
-        def run(self, my_id, delta):
+        def run(self, soldier, delta):
             raise NotImplementedError()
 
         def add_child(self, child):
             self.children.append(child)
 
-    class Selector(Node):
-        def run(self, my_id, delta):
+    class Selector(CompositeNode):
+        def run(self, soldier, delta):
             for node in self.children:
-                result = node.run(my_id, delta)
+                result = node.run(soldier, delta)
                 if result:
                     return True
             return False
 
-    class Sequence(Node):
-        def run(self, my_id, delta):
+    class Sequence(CompositeNode):
+        def run(self, soldier, delta):
             for node in self.children:
-                result = node.run(my_id, delta)
+                result = node.run(soldier, delta)
                 if not result:
                     return False
             return True
 
-    class Invert(Node):
-        def run(self, my_id, delta):
-            return not self.children[0].run(my_id, delta)
+    class Invert(CompositeNode):
+        def run(self, soldier, delta):
+            return not self.children[0].run(soldier, delta)
 
         def add_child(self, child):
             if self.children:
                 raise InvalidBehaviorTree("Invert supports at most 1 child")
             BehaviorTree.Node.add_child(self, child)
 
-    class Arrive(Node):
+    class ArriveTarget(LeafNode):
         SLOW_RADIUS = 100
         STOP_RADIUS = 50
 
-        def run(self, my_id, delta):
-            sldr = BehaviorTree.board().get_for_id(Blackboard.SOLDIERS, my_id)
-            target = BehaviorTree.board().get_for_id(Blackboard.TARGET, my_id)
+        def run(self, soldier, delta):
+            target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
             if not target:
                 return False
+            return BehaviorTree._arrive(soldier, target.pos, self.SLOW_RADIUS, self.STOP_RADIUS)
 
-            direction = target.pos - sldr.pos
-            dist = direction.magnitude()
-            if dist < self.STOP_RADIUS:
-                goal_speed = 0
-            elif dist > self.SLOW_RADIUS:
-                goal_speed = sldr.max_speed
-            else:
-                goal_speed = sldr.max_speed * dist / self.SLOW_RADIUS
-            direction.normalize_ip()
-            goal_velocity = direction * goal_speed
-            sldr.add_velocity_steering(goal_velocity - sldr.velocity)
+    class ArriveWaypoint(LeafNode):
+        SLOW_RADIUS = 100
+        STOP_RADIUS = 50
 
-            return True
+        def run(self, soldier, delta):
+            waypoint = BehaviorTree.board().get_for_id(Blackboard.WAYPOINT, soldier.my_id)
+            if not waypoint:
+                return False
+            return BehaviorTree._arrive(soldier, waypoint, self.SLOW_RADIUS, self.STOP_RADIUS)
 
-        def add_child(self, child):
-            raise InvalidBehaviorTree("Arrive does not support adding children")
-
-    class Align(Node):
+    class AimTarget(LeafNode):
         SLOW_RADIUS = 20.0
         STOP_RADIUS = 2.0
 
-        def run(self, my_id, delta):
-            sldr = BehaviorTree.board().get_for_id(Blackboard.SOLDIERS, my_id)
-            target = BehaviorTree.board().get_for_id(Blackboard.TARGET, my_id)
+        def run(self, soldier, delta):
+            target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
             if not target:
                 return False
+            return BehaviorTree._aim(soldier, target.pos, self.SLOW_RADIUS, self.STOP_RADIUS)
 
-            direction = target.pos - sldr.pos
-            rotation = direction.angle_to(sldr.facing)
-            if rotation > 180:
-                rotation -= 360
-            elif rotation < -180:
-                rotation += 360
+    class AimWaypoint(LeafNode):
+        SLOW_RADIUS = 20.0
+        STOP_RADIUS = 2.0
 
-            rot_size = abs(rotation)
-            if rot_size < self.STOP_RADIUS:
-                goal_rot = 0
-            elif rot_size > self.SLOW_RADIUS:
-                goal_rot = sldr.max_rotation
-            else:
-                goal_rot = sldr.max_rotation * rot_size / self.SLOW_RADIUS
+        def run(self, soldier, delta):
+            waypoint = BehaviorTree.board().get_for_id(Blackboard.WAYPOINT, soldier.my_id)
+            if not waypoint:
+                return False
+            return BehaviorTree._aim(soldier, waypoint, self.SLOW_RADIUS, self.STOP_RADIUS)
 
-            goal_rot *= rotation / rot_size
-            sldr.add_rotation_steering(goal_rot - sldr.rotation)
+    class TargetEnemy(LeafNode):
+        def run(self, soldier, delta):
+            armies = BehaviorTree.board()[Blackboard.ARMIES]
+            #TODO select randomly instead of the first one you find
+            for army_id, army in armies.items():
+                if army_id == soldier.army_id:
+                    continue
+                for enemy in army.soldiers:
+                    if soldier.pos.distance_to(enemy.pos) <= soldier.sight_range:
+                        BehaviorTree.board()[Blackboard.TARGET][soldier.my_id] = enemy
+                        return True
+            return False
+
+    class TargetInRange(LeafNode):
+        def run(self, soldier, delta):
+            target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
+            return soldier.pos.distance_to(target.pos) <= soldier.attack_range
+
+    class Attack(LeafNode):
+        def run(self, soldier, delta):
+            soldier.attack()
+
+    class TakeArmyWaypoint(LeafNode):
+        def run(self, soldier, delta):
+            army = BehaviorTree.board().get_for_id(Blackboard.ARMIES, soldier.army_id)
+            BehaviorTree.board()[Blackboard.WAYPOINT][soldier.my_id] = army.waypoint
             return True
-
-        def add_child(self, child):
-            raise InvalidBehaviorTree("Align does not support adding children")
 
