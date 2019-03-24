@@ -4,6 +4,7 @@ Implementation of behavior trees
 
 import json
 from pygame import Vector2
+import src.util as util
 
 
 class InvalidBehaviorTree(Exception):
@@ -121,13 +122,10 @@ class BehaviorTree:
     @staticmethod
     def _aim(soldier, destination, slow_radius, stop_radius):
         direction = destination - soldier.pos
-        facing = Vector2(0, 1)
+        facing = Vector2(0, -1)
         facing.rotate_ip(soldier.facing)
-        rotation = direction.angle_to(facing)
-        if rotation > 180:
-            rotation -= 360
-        elif rotation < -180:
-            rotation += 360
+        rotation = facing.angle_to(direction)
+        rotation = util.normalize_rotation(rotation)
 
         rot_size = abs(rotation)
         if rot_size < stop_radius:
@@ -181,21 +179,21 @@ class BehaviorTree:
         def add_child(self, child):
             if self.children:
                 raise InvalidBehaviorTree("Invert supports at most 1 child")
-            BehaviorTree.Node.add_child(self, child)
+            BehaviorTree.CompositeNode.add_child(self, child)
 
     class ArriveTarget(LeafNode):
         SLOW_RADIUS = 100
-        STOP_RADIUS = 50
+        STOP_RADIUS = 25
 
         def run(self, soldier, delta):
             target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
-            if not target:
+            if not target or not target.is_alive():
                 return False
             return BehaviorTree._arrive(soldier, target.pos, self.SLOW_RADIUS, self.STOP_RADIUS)
 
     class ArriveWaypoint(LeafNode):
         SLOW_RADIUS = 100
-        STOP_RADIUS = 50
+        STOP_RADIUS = 10
 
         def run(self, soldier, delta):
             waypoint = BehaviorTree.board().get_for_id(Blackboard.WAYPOINT, soldier.my_id)
@@ -204,17 +202,17 @@ class BehaviorTree:
             return BehaviorTree._arrive(soldier, waypoint, self.SLOW_RADIUS, self.STOP_RADIUS)
 
     class AimTarget(LeafNode):
-        SLOW_RADIUS = 20.0
+        SLOW_RADIUS = 40.0
         STOP_RADIUS = 2.0
 
         def run(self, soldier, delta):
             target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
-            if not target:
+            if not target or not target.is_alive():
                 return False
             return BehaviorTree._aim(soldier, target.pos, self.SLOW_RADIUS, self.STOP_RADIUS)
 
     class AimWaypoint(LeafNode):
-        SLOW_RADIUS = 20.0
+        SLOW_RADIUS = 40.0
         STOP_RADIUS = 2.0
 
         def run(self, soldier, delta):
@@ -239,6 +237,8 @@ class BehaviorTree:
     class TargetInRange(LeafNode):
         def run(self, soldier, delta):
             target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
+            if not target or not target.is_alive():
+                return False
             return soldier.pos.distance_to(target.pos) <= soldier.attack_range
 
     class Attack(LeafNode):

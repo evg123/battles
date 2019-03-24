@@ -31,20 +31,21 @@ class Soldier:
         self.pos = Vector2()
         self.velocity = Vector2()
         self.velocity_steering = Vector2()
-        self.max_velocity = 10 #TODO remove default after subclassing
-        self.max_vel_accel = 1 #TODO remove default after subclassing
+        self.max_velocity = 150 #TODO remove default after subclassing
+        self.max_vel_accel = 40 #TODO remove default after subclassing
         self.facing = 0
         self.rotation = 0
         self.rotation_steering = 0
-        self.max_rotation = 360 #TODO remove default after subclassing
-        self.max_rot_accel = 20 #TODO remove default after subclassing
+        self.max_rotation = 300 #TODO remove default after subclassing
+        self.max_rot_accel = 80 #TODO remove default after subclassing
         self.radius = Soldier.DEFAULT_RADIUS
         self.color = Soldier.DEFAULT_COLOR
-        self.health = Soldier.MAX_HEALTH
+        self.max_health = Soldier.MAX_HEALTH
+        self.health = self.max_health
         self.cleanup_timer = Soldier.DEFAULT_CLEANUP_TIME
         self.behavior_tree = BehaviorTree("swordsman")
         self.weapon = Sword()
-        self.weapon.update_wielder_pos(self.pos)
+        self.weapon.wielder_update(self.pos, self.facing)
         self.sight_range = 150
         self.attack_range = 25
 
@@ -52,15 +53,19 @@ class Soldier:
         # Countdown to removal if needed
         if not self.is_alive():
             self.cleanup_timer -= delta
+            if self.weapon:
+                self.weapon.deactivate()
+            return
 
         # Slow healing over time
         self.heal(Soldier.HEALING_FACTOR * delta)
 
         self.reset_steering()
         self.behavior_tree.run(self, delta)
-        self.handle_steering()
+        self.handle_steering(delta)
 
         if self.weapon:
+            self.weapon.wielder_update(self.pos, self.facing)
             self.weapon.update(delta)
 
     def reset_steering(self):
@@ -68,22 +73,23 @@ class Soldier:
         self.velocity_steering.y = 0
         self.rotation_steering = 0
 
-    def handle_steering(self):
+    def handle_steering(self, delta):
         # Velocity
         if self.velocity_steering.length() > self.max_vel_accel:
             self.velocity_steering.scale_to_length(self.max_vel_accel)
         self.velocity += self.velocity_steering
         if self.velocity.length() > self.max_velocity:
             self.velocity.scale_to_length(self.max_velocity)
-        self.pos += self.velocity
+        self.pos += self.velocity * delta
 
         # Rotation
         if self.rotation_steering > self.max_rot_accel:
             self.rotation_steering = self.max_rot_accel
         self.rotation += self.rotation_steering
-        if self.rotation > self.max_rotation:
-            self.rotation = self.max_rotation
-        self.facing += self.rotation
+        if abs(self.rotation) > self.max_rotation:
+            self.rotation = self.max_rotation * (self.rotation / abs(self.rotation))
+        self.facing += self.rotation * delta
+        self.facing = util.normalize_rotation(self.facing)
 
     def interact(self, other):
         if self.weapon:
@@ -92,7 +98,12 @@ class Soldier:
                 self.weapon.deactivate()
 
     def draw(self, window):
-        pygame.draw.circle(window, self.color, [int(self.pos.x), int(self.pos.y)], self.radius)
+        health_factor = self.health / self.max_health
+        current_color = [max(part * health_factor, 0) for part in self.color]
+        pygame.draw.circle(window, current_color,
+                           [int(self.pos.x), int(self.pos.y)], self.radius)
+        pygame.draw.circle(window, pygame.color.THECOLORS["black"],
+                           [int(self.pos.x), int(self.pos.y)], self.radius, 1)
 
         self.weapon.draw(window)
 
@@ -101,7 +112,7 @@ class Soldier:
         self.pos.y = new_y
         # Update weapon positions
         if self.weapon:
-            self.weapon.update_wielder_pos(self.pos)
+            self.weapon.wielder_update(self.pos, self.facing)
 
     def move_to_vec2(self, new_pos):
         self.move_to_coords(new_pos.x, new_pos.y)
@@ -121,8 +132,8 @@ class Soldier:
 
     def heal(self, amount):
         self.health += amount
-        if self.health > Soldier.MAX_HEALTH:
-            self.health = Soldier.MAX_HEALTH
+        if self.health > self.max_health:
+            self.health = self.max_health
 
     def take_damage(self, damage):
         self.health -= damage
