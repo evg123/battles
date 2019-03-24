@@ -15,8 +15,9 @@ class Army:
         cls.next_id += 1
         return sid
 
-    def __init__(self):
+    def __init__(self, color):
         self.my_id = Army.get_id()
+        self.color = color
         self.soldiers = []
         self.waypoint = Vector2()
 
@@ -26,4 +27,5 @@ class Army:
 
     def add_soldier(self, soldier):
         soldier.army_id = self.my_id
+        soldier.color = self.color
         self.soldiers.append(soldier)

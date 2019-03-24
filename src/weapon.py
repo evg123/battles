@@ -24,9 +24,10 @@ class Weapon:
     def draw(self, window):
         raise NotImplementedError()
 
-    def update_wielder_pos(self, pos):
+    def wielder_update(self, pos, facing):
         self.pos.x = pos.x
         self.pos.y = pos.y
+        self.angle = facing
 
     def activate(self):
         pass
@@ -44,8 +45,8 @@ class Sword(Weapon):
     START = 0.0
     FINISHED = 0.75
 
-    START_DIST_OFFSET = 0
-    FINAL_DIST_OFFSET = 10
+    START_DIST_OFFSET = 4
+    FINAL_DIST_OFFSET = 8
     START_ANGLE_OFFSET = 0
     COLOR = (128, 128, 128)
 
@@ -54,53 +55,54 @@ class Sword(Weapon):
         self.pos_speed = 600
         self.angle_speed = 500
         self.damage = 30
-        self.swing_time = Sword.INACTIVE
-        self.length = 20
+        self.swing_time = self.INACTIVE
+        self.length = 22
         self.width = 5
 
         # Offset from wielder
         self.dist_offset = 0
-        self.angle_offset = 0
+        self.angle_offset = self.START_ANGLE_OFFSET
 
     def update(self, delta):
         self.animate(delta)
 
     def animate(self, delta):
-        if self.swing_time > Sword.FINISHED:
-            self.swing_time = Sword.INACTIVE
+        if self.swing_time > self.FINISHED:
+            self.swing_time = self.INACTIVE
 
-        if self.swing_time < Sword.START:
+        if self.swing_time < self.START:
             # Return to sheathed position
-            if self.dist_offset > Sword.START_DIST_OFFSET:
+            if self.dist_offset > self.START_DIST_OFFSET:
                 change = self.pos_speed * delta
-                self.dist_offset = max(self.dist_offset - change, Sword.START_DIST_OFFSET)
-            if self.angle_offset > Sword.START_ANGLE_OFFSET:
+                self.dist_offset = max(self.dist_offset - change, self.START_DIST_OFFSET)
+            if self.angle_offset > self.START_ANGLE_OFFSET:
                 change = self.angle_speed * delta
-                self.angle_offset = max(self.angle_offset - change, Sword.START_ANGLE_OFFSET)
+                self.angle_offset = max(self.angle_offset - change, self.START_ANGLE_OFFSET)
         else:
             # Progress through swing
+            self.swing_time += delta
             change = self.pos_speed * delta
-            self.dist_offset = min(self.dist_offset + change, Sword.FINAL_DIST_OFFSET)
+            self.dist_offset = min(self.dist_offset + change, self.FINAL_DIST_OFFSET)
             self.angle_offset += self.angle_speed * delta
 
-        self.swing_time += delta
-
     def draw(self, window):
-        norm = Vector2(0, 1)
+        norm = Vector2(0, -1)
         norm.rotate_ip(self.angle + self.angle_offset)
         start_pos = self.pos + norm * self.dist_offset
         end_pos = self.pos + norm * (self.dist_offset + self.length)
-        pygame.draw.line(window, Sword.COLOR, start_pos, end_pos, self.width)
+        pygame.draw.line(window, self.COLOR, start_pos, end_pos, self.width)
 
     def activate(self):
-        if self.swing_time == Sword.INACTIVE:
-            self.swing_time = Sword.START
+        if self.swing_time == self.INACTIVE:
+            self.swing_time = self.START
 
     def deactivate(self):
-        self.swing_time = Sword.INACTIVE
+        self.swing_time = self.INACTIVE
 
     def hits_circle(self, other_pos, other_radius):
-        norm = Vector2(0, 1)
+        if self.swing_time == self.INACTIVE:
+            return False
+        norm = Vector2(0, -1)
         norm.rotate_ip(self.angle + self.angle_offset)
         end_pos = self.pos + norm * (self.dist_offset + self.length)
         dist = other_pos.distance_to(end_pos)
