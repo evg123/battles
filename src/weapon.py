@@ -24,10 +24,10 @@ class Weapon:
     def draw(self, window):
         raise NotImplementedError()
 
-    def wielder_update(self, pos, facing):
-        self.pos.x = pos.x
-        self.pos.y = pos.y
-        self.angle = facing
+    def wielder_update(self, location):
+        self.pos.x = location.pos.x
+        self.pos.y = location.pos.y
+        self.angle = location.facing
 
     def activate(self):
         pass
@@ -58,9 +58,10 @@ class Sword(Weapon):
         self.swing_time = self.INACTIVE
         self.length = 22
         self.width = 5
+        self.attack_range = self.length
 
         # Offset from wielder
-        self.dist_offset = 0
+        self.dist_offset = self.START_DIST_OFFSET
         self.angle_offset = self.START_ANGLE_OFFSET
 
     def update(self, delta):
@@ -109,5 +110,35 @@ class Sword(Weapon):
         return dist <= other_radius
 
 
+class Bow(Weapon):
 
+    START_ANGLE_OFFSET = 0
 
+    def __init__(self):
+        super(Bow, self).__init__()
+        self.arrows = []
+        self.arrow_speed = 600
+        self.damage = 20
+        self.attack_range = 400
+
+        # Offset from wielder
+        self.dist_offset = 10
+        self.angle_offset = self.START_ANGLE_OFFSET
+
+    def update(self, delta):
+        pass
+
+    def draw(self, window):
+        pass
+
+    def activate(self):
+        # Fire an arrow
+        pass
+
+    def deactivate(self):
+        # Can't stop a fired arrow
+        pass
+
+    def hits_circle(self, other_pos, other_radius):
+        # Check if any arrow hits the circle
+        return False

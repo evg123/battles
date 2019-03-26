@@ -223,15 +223,15 @@ class BehaviorTree:
 
     class TargetEnemy(LeafNode):
         def run(self, soldier, delta):
-            armies = BehaviorTree.board()[Blackboard.ARMIES]
+            soldiers = BehaviorTree.board()[Blackboard.SOLDIERS]
             #TODO select randomly instead of the first one you find
-            for army_id, army in armies.items():
-                if army_id == soldier.army_id:
+            for enemy in soldiers.values():
+                if enemy.army == soldier.army:
+                    # Same team
                     continue
-                for enemy in army.soldiers:
-                    if soldier.pos.distance_to(enemy.pos) <= soldier.sight_range:
-                        BehaviorTree.board()[Blackboard.TARGET][soldier.my_id] = enemy
-                        return True
+                if soldier.pos.distance_to(enemy.pos) <= soldier.sight_range:
+                    BehaviorTree.board()[Blackboard.TARGET][soldier.my_id] = enemy
+                    return True
             return False
 
     class TargetInRange(LeafNode):
@@ -247,7 +247,7 @@ class BehaviorTree:
 
     class TakeArmyWaypoint(LeafNode):
         def run(self, soldier, delta):
-            army = BehaviorTree.board().get_for_id(Blackboard.ARMIES, soldier.army_id)
+            army = soldier.army
             BehaviorTree.board()[Blackboard.WAYPOINT][soldier.my_id] = army.waypoint
             return True
 

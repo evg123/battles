@@ -3,6 +3,7 @@ Class representing an army made up of formations of soldiers
 """
 
 from pygame import Vector2
+from src.location import Location
 
 
 class Army:
@@ -18,14 +19,13 @@ class Army:
     def __init__(self, color):
         self.my_id = Army.get_id()
         self.color = color
-        self.soldiers = []
+        self.anchor = Location()
         self.waypoint = Vector2()
+        self.formations = []
 
     def set_waypoint(self, xpos, ypos):
         self.waypoint.x = xpos
         self.waypoint.y = ypos
 
-    def add_soldier(self, soldier):
-        soldier.army_id = self.my_id
-        soldier.color = self.color
-        self.soldiers.append(soldier)
+
+
