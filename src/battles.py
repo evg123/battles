@@ -28,14 +28,14 @@ class Battles:
         #TODO temporary 2v2 setup
         army = Army(pygame.color.THECOLORS['cyan'])
         sldr = Soldier()
-        army.add_soldier(sldr)
+        sldr.army = army
         sldr.move_to_coords(200, 250)
         self.armies[army.my_id] = army
         self.soldiers[sldr.my_id] = sldr
         army.set_waypoint(1080, 250)
 
         sldr = Soldier()
-        army.add_soldier(sldr)
+        sldr.army = army
         sldr.move_to_coords(200, 300)
         self.armies[army.my_id] = army
         self.soldiers[sldr.my_id] = sldr
@@ -43,14 +43,14 @@ class Battles:
 
         army = Army(pygame.color.THECOLORS['orange'])
         sldr = Soldier()
-        army.add_soldier(sldr)
+        sldr.army = army
         sldr.move_to_coords(1080, 275)
         self.armies[army.my_id] = army
         self.soldiers[sldr.my_id] = sldr
         army.set_waypoint(200, 350)
 
         sldr = Soldier()
-        army.add_soldier(sldr)
+        sldr.army = army
         sldr.move_to_coords(1080, 350)
         self.armies[army.my_id] = army
         self.soldiers[sldr.my_id] = sldr

@@ -2,19 +2,17 @@
 Class representing a soldier
 """
 import pygame
-from pygame import Vector2
 import src.util as util
-from src.weapon import Sword
+from src.weapon import Sword, Bow
 from src.behavior import BehaviorTree
+from src.location import Location
 
 
 class Soldier:
 
     DEFAULT_RADIUS = 10
-    DEFAULT_COLOR = (255, 255, 255)
     DEFAULT_CLEANUP_TIME = 10
-
-    MAX_HEALTH = 100
+    DEFAULT_COLOR = pygame.color.THECOLORS["white"]
     HEALING_FACTOR = 1.0
 
     next_id = 1
@@ -27,27 +25,18 @@ class Soldier:
 
     def __init__(self):
         self.my_id = Soldier.get_id()
-        self.army_id = 0
-        self.pos = Vector2()
-        self.velocity = Vector2()
-        self.velocity_steering = Vector2()
-        self.max_velocity = 150 #TODO remove default after subclassing
-        self.max_vel_accel = 40 #TODO remove default after subclassing
-        self.facing = 0
-        self.rotation = 0
-        self.rotation_steering = 0
-        self.max_rotation = 300 #TODO remove default after subclassing
-        self.max_rot_accel = 80 #TODO remove default after subclassing
+        self.army = None
+        self.formation = None
+        self.loc = Location()
         self.radius = Soldier.DEFAULT_RADIUS
-        self.color = Soldier.DEFAULT_COLOR
-        self.max_health = Soldier.MAX_HEALTH
+        self.max_health = 0
         self.health = self.max_health
         self.cleanup_timer = Soldier.DEFAULT_CLEANUP_TIME
-        self.behavior_tree = BehaviorTree("swordsman")
-        self.weapon = Sword()
+        self.behavior_tree = None
+        self.weapon = None
         self.weapon.wielder_update(self.pos, self.facing)
         self.sight_range = 150
-        self.attack_range = 25
+        self.slot_costs = (0, 0, 0)
 
     def update(self, delta):
         # Countdown to removal if needed
@@ -60,36 +49,13 @@ class Soldier:
         # Slow healing over time
         self.heal(Soldier.HEALING_FACTOR * delta)
 
-        self.reset_steering()
+        self.loc.reset_steering()
         self.behavior_tree.run(self, delta)
-        self.handle_steering(delta)
+        self.loc.handle_steering(delta)
 
         if self.weapon:
-            self.weapon.wielder_update(self.pos, self.facing)
+            self.weapon.wielder_update(self.loc)
             self.weapon.update(delta)
-
-    def reset_steering(self):
-        self.velocity_steering.x = 0
-        self.velocity_steering.y = 0
-        self.rotation_steering = 0
-
-    def handle_steering(self, delta):
-        # Velocity
-        if self.velocity_steering.length() > self.max_vel_accel:
-            self.velocity_steering.scale_to_length(self.max_vel_accel)
-        self.velocity += self.velocity_steering
-        if self.velocity.length() > self.max_velocity:
-            self.velocity.scale_to_length(self.max_velocity)
-        self.pos += self.velocity * delta
-
-        # Rotation
-        if self.rotation_steering > self.max_rot_accel:
-            self.rotation_steering = self.max_rot_accel
-        self.rotation += self.rotation_steering
-        if abs(self.rotation) > self.max_rotation:
-            self.rotation = self.max_rotation * (self.rotation / abs(self.rotation))
-        self.facing += self.rotation * delta
-        self.facing = util.normalize_rotation(self.facing)
 
     def interact(self, other):
         if self.weapon:
@@ -99,36 +65,14 @@ class Soldier:
 
     def draw(self, window):
         health_factor = self.health / self.max_health
-        current_color = [max(part * health_factor, 0) for part in self.color]
+        color = self.army.color if self.army else self.DEFAULT_COLOR
+        current_color = [max(part * health_factor, 0) for part in color]
         pygame.draw.circle(window, current_color,
-                           [int(self.pos.x), int(self.pos.y)], self.radius)
+                           [int(self.loc.pos.x), int(self.loc.pos.y)], self.radius)#TODO just pass in loc.pos?
         pygame.draw.circle(window, pygame.color.THECOLORS["black"],
-                           [int(self.pos.x), int(self.pos.y)], self.radius, 1)
+                           [int(self.loc.pos.x), int(self.loc.pos.y)], self.radius, 1)
 
         self.weapon.draw(window)
-
-    def move_to_coords(self, new_x, new_y):
-        self.pos.x = new_x
-        self.pos.y = new_y
-        # Update weapon positions
-        if self.weapon:
-            self.weapon.wielder_update(self.pos, self.facing)
-
-    def move_to_vec2(self, new_pos):
-        self.move_to_coords(new_pos.x, new_pos.y)
-
-    def move_offset(self, xoff, yoff):
-        self.move_to_coords(self.pos.x + xoff, self.pos.y + yoff)
-
-    def add_velocity_steering(self, steering):
-        if steering.length() > self.max_vel_accel:
-            steering.scale_to_length(self.max_vel_accel)
-        self.velocity_steering += steering
-
-    def add_rotation_steering(self, steering):
-        if steering > self.max_rot_accel:
-            steering = self.max_rot_accel
-        self.rotation += steering
 
     def heal(self, amount):
         self.health += amount
@@ -139,7 +83,7 @@ class Soldier:
         self.health -= damage
 
     def overlaps(self, xpos, ypos):
-        dist = util.distance(self.pos.x, self.pos.y, xpos, ypos)
+        dist = util.distance(self.loc.pos.x, self.loc.pos.y, xpos, ypos)
         return dist <= self.radius
 
     def is_alive(self):
@@ -151,5 +95,35 @@ class Soldier:
     def attack(self):
         if self.weapon:
             self.weapon.activate()
+
+
+class Swordsperson(Soldier):
+    def __init__(self):
+        super(Swordsperson, self).__init__()
+        self.loc.max_velocity = 120
+        self.loc.max_vel_accel = 40
+        self.loc.max_rotation = 300
+        self.loc.max_rot_accel = 80
+        self.max_health = 100
+        self.health = self.max_health
+        self.behavior_tree = BehaviorTree("swordsman")
+        self.weapon = Sword()
+        self.slot_costs = (10, 0, 100)
+
+
+class Archer(Soldier):
+    def __init__(self):
+        super(Archer, self).__init__()
+        self.loc.max_velocity = 150
+        self.loc.max_vel_accel = 60
+        self.loc.max_rotation = 300
+        self.loc.max_rot_accel = 80
+        self.max_health = 60
+        self.health = self.max_health
+        self.behavior_tree = BehaviorTree("archer")
+        self.weapon = Bow()
+        self.slot_costs = (10, 100, 0)
+
+
 
 
