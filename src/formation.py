@@ -1,9 +1,10 @@
 """
 Class representing a formation of soldiers
 """
-
 from pygame import Vector2
-from src.location import Location
+from src.movable import Movable
+from src.behavior import BehaviorTree
+from src.graphics import Colors
 
 
 class InvalidFormation(Exception):
@@ -11,6 +12,8 @@ class InvalidFormation(Exception):
 
 
 class Slot:
+
+    FONT_SIZE = 12
     ANY, FIGHTER, RANGED = range(3)
     EMPTY = 0
 
@@ -18,19 +21,47 @@ class Slot:
         self.formation_offset = Vector2.__new__(x_off, y_off)
         self.type = type
         self.soldier_id = self.EMPTY
+        self.color = None
 
     def get_score_for_soldier(self, soldier):
         if self.soldier_id != self.EMPTY:
             return 0
         return soldier.slot_costs[self.type]
 
+    def draw(self, renderer, formation_pos):
+        if renderer.tactics_enabled:
+            #TODO switch to drawing the slot type
+            renderer.draw_text(self.color, formation_pos + self.formation_offset, self.FONT_SIZE, "X")
 
-class Formation:
+
+class Formation(Movable):
+
+    ANCHOR_RADIUS = 2
 
     def __init__(self):
-        self.anchor = Location()
+        super(Formation, self).__init__()
         self.army_offset = Vector2()
         self.slots = []
+        self.color = Colors.black
+
+    def set_color(self, color):
+        self.color = color
+        for slot in self.slots:
+            slot.color = self.color
+
+    def update(self, delta, army_pos):
+        #TODO update max speed to match slowest unit
+        destination = army_pos + self.army_offset
+        self.reset_steering()
+        BehaviorTree.aim(self, destination)
+        BehaviorTree.arrive(self, destination)
+        self.handle_steering(delta)
+
+    def draw(self, renderer):
+        if renderer.tactics_enabled:
+            renderer.draw_circle(self.color, self.pos, self.ANCHOR_RADIUS)
+        for slot in self.slots:
+            slot.draw(renderer, self.pos)
 
 
 class FormationLoader:
@@ -57,7 +88,7 @@ class FormationLoader:
         return x_off, y_off
 
     @staticmethod
-    def load_from_file(formation_name):
+    def load(formation_name):
         file_path = FormationLoader.file_path_from_name(formation_name)
         try:
             with open(file_path) as def_file:
