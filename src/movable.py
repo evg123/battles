@@ -3,9 +3,10 @@ Class that represents an objects position and orientation in the world
 """
 
 from pygame import Vector2
+import src.util as util
 
 
-class Location:
+class Movable:
     def __init__(self):
         self.pos = Vector2()
         self.velocity = Vector2()
@@ -40,19 +41,6 @@ class Location:
             self.rotation = self.max_rotation * (self.rotation / abs(self.rotation))
         self.facing += self.rotation * delta
         self.facing = util.normalize_rotation(self.facing)
-
-    def move_to_coords(self, new_x, new_y):
-        self.pos.x = new_x
-        self.pos.y = new_y
-        # Update weapon positions
-        if self.weapon:
-            self.weapon.wielder_update(self.pos, self.facing)
-
-    def move_to_vec2(self, new_pos):
-        self.move_to_coords(new_pos.x, new_pos.y)
-
-    def move_offset(self, xoff, yoff):
-        self.move_to_coords(self.pos.x + xoff, self.pos.y + yoff)
 
     def add_velocity_steering(self, steering):
         if steering.length() > self.max_vel_accel:

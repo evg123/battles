@@ -1,8 +1,6 @@
 """
 Classes representing weapons like a sword or bow
 """
-
-import pygame
 from pygame import Vector2
 
 
@@ -24,10 +22,10 @@ class Weapon:
     def draw(self, window):
         raise NotImplementedError()
 
-    def wielder_update(self, location):
-        self.pos.x = location.pos.x
-        self.pos.y = location.pos.y
-        self.angle = location.facing
+    def wielder_update(self, pos, facing):
+        self.pos.x = pos.x
+        self.pos.y = pos.y
+        self.angle = facing
 
     def activate(self):
         pass
@@ -86,12 +84,12 @@ class Sword(Weapon):
             self.dist_offset = min(self.dist_offset + change, self.FINAL_DIST_OFFSET)
             self.angle_offset += self.angle_speed * delta
 
-    def draw(self, window):
+    def draw(self, renderer):
         norm = Vector2(0, -1)
         norm.rotate_ip(self.angle + self.angle_offset)
         start_pos = self.pos + norm * self.dist_offset
         end_pos = self.pos + norm * (self.dist_offset + self.length)
-        pygame.draw.line(window, self.COLOR, start_pos, end_pos, self.width)
+        renderer.draw_line(self.COLOR, start_pos, end_pos, self.width)
 
     def activate(self):
         if self.swing_time == self.INACTIVE:
@@ -128,7 +126,7 @@ class Bow(Weapon):
     def update(self, delta):
         pass
 
-    def draw(self, window):
+    def draw(self, renderer):
         pass
 
     def activate(self):
