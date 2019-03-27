@@ -32,8 +32,11 @@ class Renderer:
         pygame.draw.circle(self.window, color, position, 1)
 
 
-class Colors:
+class PygameColors(type):
     def __getattr__(self, item):
         return pygame.color.THECOLORS.get(item)
 
+
+class Colors(metaclass=PygameColors):
+    pass
 

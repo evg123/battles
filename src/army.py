@@ -47,8 +47,9 @@ class Army(Movable):
 
     def add_formation(self, formation_name, x_pos, y_pos):
         form = FormationLoader.load(formation_name)
-        form.set_color(self.color)
+        form.set_army(self)
         form.army_offset.x = x_pos - self.pos.x
         form.army_offset.x = y_pos - self.pos.y
+        self.formations.append(form)
 
 
