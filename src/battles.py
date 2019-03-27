@@ -5,7 +5,7 @@ import pygame
 from src.util import FrameTimer
 from src.graphics import Renderer, Colors
 from src.army import Army
-from src.soldier import Soldier
+from src.soldier import Swordsperson, Archer
 from src.behavior import BehaviorTree, Blackboard
 
 
@@ -22,35 +22,56 @@ class Battles:
         self.soldiers = {}
 
     def setup(self):
-        #TODO temporary 2v2 setup
+        # Left Army
         army = Army(Colors.cyan)
-        sldr = Soldier()
-        sldr.army = army
-        sldr.set_position(200, 250)
-        self.armies[army.my_id] = army
-        self.soldiers[sldr.my_id] = sldr
-        army.set_waypoint(1080, 250)
+        army.pos.x = 200
+        army.pos.y = 350
+        army.add_formation("basic_1", 150, 300)
+        army.add_formation("basic_1", 200, 400)
 
-        sldr = Soldier()
-        sldr.army = army
-        sldr.set_position(200, 300)
-        self.armies[army.my_id] = army
-        self.soldiers[sldr.my_id] = sldr
-        army.set_waypoint(1080, 250)
+        army.formations[0].add_soldier(Swordsperson())
+        army.formations[0].add_soldier(Swordsperson())
+        army.formations[0].add_soldier(Swordsperson())
+        army.formations[0].add_soldier(Archer())
+        army.formations[0].add_soldier(Archer())
+        army.formations[0].add_soldier(Archer())
+        army.formations[0].add_soldier(Archer())
 
-        army = Army(Colors.orange)
-        sldr = Soldier()
-        sldr.army = army
-        sldr.set_position(1080, 275)
-        self.armies[army.my_id] = army
-        self.soldiers[sldr.my_id] = sldr
-        army.set_waypoint(200, 350)
+        army.formations[1].add_soldier(Swordsperson())
+        army.formations[1].add_soldier(Swordsperson())
+        army.formations[1].add_soldier(Swordsperson())
+        army.formations[1].add_soldier(Swordsperson())
+        army.formations[1].add_soldier(Swordsperson())
+        army.formations[1].add_soldier(Swordsperson())
+        army.formations[1].add_soldier(Swordsperson())
 
-        sldr = Soldier()
-        sldr.army = army
-        sldr.set_position(1080, 350)
-        self.armies[army.my_id] = army
-        self.soldiers[sldr.my_id] = sldr
+        army.set_waypoint(1000, 350)
+
+        # Right Army
+        army = Army(Colors.cyan)
+        army.pos.x = 1080
+        army.pos.y = 350
+        army.add_formation("basic_1", 1080, 200)
+        army.add_formation("basic_1", 1080, 350)
+        army.add_formation("basic_1", 1080, 500)
+
+        army.formations[0].add_soldier(Swordsperson())
+        army.formations[0].add_soldier(Swordsperson())
+        army.formations[0].add_soldier(Swordsperson())
+        army.formations[0].add_soldier(Archer())
+        army.formations[0].add_soldier(Archer())
+        army.formations[0].add_soldier(Archer())
+        army.formations[0].add_soldier(Archer())
+
+        army.formations[1].add_soldier(Swordsperson())
+        army.formations[1].add_soldier(Swordsperson())
+        army.formations[1].add_soldier(Swordsperson())
+
+        army.formations[2].add_soldier(Swordsperson())
+        army.formations[2].add_soldier(Archer())
+        army.formations[2].add_soldier(Archer())
+        army.formations[2].add_soldier(Archer())
+
         army.set_waypoint(200, 350)
 
     def run(self):
@@ -76,26 +97,29 @@ class Battles:
         for army in self.armies:
             army.update(delta)
 
-        for sldr in self.soldiers.values():
-            sldr.update(delta)
+        for soldier in self.soldiers.values():
+            soldier.update(delta)
 
     def handle_interactions(self):
         #TODO optimize
-        for sldr1 in self.soldiers.values():
-            for sldr2 in self.soldiers.values():
-                if sldr1 == sldr2:
+        for soldier1 in self.soldiers.values():
+            for soldier2 in self.soldiers.values():
+                if soldier1 == soldier2:
                     continue
-                sldr1.interact(sldr2)
+                soldier1.interact(soldier2)
 
     def clean_up(self):
         # Remove fully gone soldiers
-        self.soldiers = {sid: sldr for sid, sldr in self.soldiers.items() if not sldr.needs_removal()}
+        self.soldiers = {sid: soldier for sid, soldier in self.soldiers.items() if not soldier.needs_removal()}
 
     def draw(self):
         self.renderer.start_frame()
 
-        for sldr in self.soldiers.values():
-            sldr.draw(self.renderer)
+        for army in self.armies:
+            army.draw(self.renderer)
+
+        for soldier in self.soldiers.values():
+            soldier.draw(self.renderer)
 
         self.renderer.end_frame()
 

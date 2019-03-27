@@ -34,7 +34,6 @@ class Soldier(Movable):
         self.cleanup_timer = Soldier.DEFAULT_CLEANUP_TIME
         self.behavior_tree = None
         self.weapon = None
-        self.weapon.wielder_update(self.pos, self.facing)
         self.sight_range = 150
         self.slot_costs = (0, 0, 0)
 
