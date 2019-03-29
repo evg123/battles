@@ -49,6 +49,8 @@ class Formation(Movable):
 
     def set_army(self, army):
         self.army = army
+        self.max_velocity = army.max_velocity * 1.1
+        self.max_rotation = army.max_rotation
         for slot in self.slots:
             slot.color = self.army.color
 
@@ -67,7 +69,7 @@ class Formation(Movable):
         for slot in self.slots:
             slot.draw(renderer, self.pos)
 
-    def add_soldier(self, soldier):
+    def add_soldier(self, soldier, snap_to_location=True):
         best_slot = None
         best_score = float("inf")
         for slot in self.slots:
@@ -79,6 +81,8 @@ class Formation(Movable):
             best_slot.assign_soldier(soldier)
             soldier.formation = self
             soldier.army = self.army
+            if snap_to_location:
+                soldier.set_position(self.pos.x, self.pos.y)
             return True
         return False
 

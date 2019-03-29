@@ -12,12 +12,12 @@ class Movable:
         self.velocity = Vector2()
         self.velocity_steering = Vector2()
         self.max_velocity = 0
-        self.max_vel_accel = 0
+        self.max_vel_accel = 60
         self.facing = 0
         self.rotation = 0
         self.rotation_steering = 0
         self.max_rotation = 0
-        self.max_rot_accel = 0
+        self.max_rot_accel = 80
 
     def reset_steering(self):
         self.velocity_steering.x = 0

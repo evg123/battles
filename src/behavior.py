@@ -232,7 +232,7 @@ class BehaviorTree:
             target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
             if not target or not target.is_alive():
                 return False
-            return soldier.pos.distance_to(target.pos) <= soldier.attack_range
+            return soldier.pos.distance_to(target.pos) <= soldier.get_attack_range()
 
     class Attack(LeafNode):
         def run(self, soldier, delta):

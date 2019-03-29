@@ -21,56 +21,66 @@ class Battles:
         self.armies = {}
         self.soldiers = {}
 
+    def create_army(self, color):
+        army = Army(color)
+        self.armies[army.my_id] = army
+        return army
+
+    def create_soldier(self, soldier_class):
+        soldier = soldier_class()
+        self.soldiers[soldier.my_id] = soldier
+        return soldier
+
     def setup(self):
         # Left Army
-        army = Army(Colors.cyan)
+        army = self.create_army(Colors.orangered)
         army.pos.x = 200
         army.pos.y = 350
         army.add_formation("basic_1", 150, 300)
         army.add_formation("basic_1", 200, 400)
 
-        army.formations[0].add_soldier(Swordsperson())
-        army.formations[0].add_soldier(Swordsperson())
-        army.formations[0].add_soldier(Swordsperson())
-        army.formations[0].add_soldier(Archer())
-        army.formations[0].add_soldier(Archer())
-        army.formations[0].add_soldier(Archer())
-        army.formations[0].add_soldier(Archer())
-
-        army.formations[1].add_soldier(Swordsperson())
-        army.formations[1].add_soldier(Swordsperson())
-        army.formations[1].add_soldier(Swordsperson())
-        army.formations[1].add_soldier(Swordsperson())
-        army.formations[1].add_soldier(Swordsperson())
-        army.formations[1].add_soldier(Swordsperson())
-        army.formations[1].add_soldier(Swordsperson())
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[0].add_soldier(self.create_soldier(Archer))
+        # army.formations[0].add_soldier(self.create_soldier(Archer))
+        # army.formations[0].add_soldier(self.create_soldier(Archer))
+        # army.formations[0].add_soldier(self.create_soldier(Archer))
+        #
+        # army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[1].add_soldier(self.create_soldier(Swordsperson))
 
         army.set_waypoint(1000, 350)
 
         # Right Army
-        army = Army(Colors.cyan)
+        army = self.create_army(Colors.darkgreen)
         army.pos.x = 1080
         army.pos.y = 350
         army.add_formation("basic_1", 1080, 200)
         army.add_formation("basic_1", 1080, 350)
         army.add_formation("basic_1", 1080, 500)
 
-        army.formations[0].add_soldier(Swordsperson())
-        army.formations[0].add_soldier(Swordsperson())
-        army.formations[0].add_soldier(Swordsperson())
-        army.formations[0].add_soldier(Archer())
-        army.formations[0].add_soldier(Archer())
-        army.formations[0].add_soldier(Archer())
-        army.formations[0].add_soldier(Archer())
-
-        army.formations[1].add_soldier(Swordsperson())
-        army.formations[1].add_soldier(Swordsperson())
-        army.formations[1].add_soldier(Swordsperson())
-
-        army.formations[2].add_soldier(Swordsperson())
-        army.formations[2].add_soldier(Archer())
-        army.formations[2].add_soldier(Archer())
-        army.formations[2].add_soldier(Archer())
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[0].add_soldier(self.create_soldier(Archer))
+        # army.formations[0].add_soldier(self.create_soldier(Archer))
+        # army.formations[0].add_soldier(self.create_soldier(Archer))
+        # army.formations[0].add_soldier(self.create_soldier(Archer))
+        #
+        # army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        #
+        # army.formations[2].add_soldier(self.create_soldier(Swordsperson))
+        # army.formations[2].add_soldier(self.create_soldier(Archer))
+        # army.formations[2].add_soldier(self.create_soldier(Archer))
+        # army.formations[2].add_soldier(self.create_soldier(Archer))
 
         army.set_waypoint(200, 350)
 
@@ -81,8 +91,10 @@ class Battles:
             delta = frame_timer.next_frame()
 
             for event in pygame.event.get():
-                if event.type == pygame.QUIT or (event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE):
+                if event.type == pygame.QUIT:
                     self._running = False
+                elif event.type == pygame.KEYUP:
+                    self.handle_keypress(event)
 
             self.update(delta)
             self.handle_interactions()
@@ -94,7 +106,7 @@ class Battles:
         BehaviorTree.board()[Blackboard.SOLDIERS] = self.soldiers
         BehaviorTree.board()[Blackboard.ARMIES] = self.armies
 
-        for army in self.armies:
+        for army in self.armies.values():
             army.update(delta)
 
         for soldier in self.soldiers.values():
@@ -115,13 +127,21 @@ class Battles:
     def draw(self):
         self.renderer.start_frame()
 
-        for army in self.armies:
+        for army in self.armies.values():
             army.draw(self.renderer)
 
         for soldier in self.soldiers.values():
             soldier.draw(self.renderer)
 
         self.renderer.end_frame()
+
+    def handle_keypress(self, event):
+        if event.key == pygame.K_ESCAPE:
+            self._running = False
+        if event.key == pygame.K_t:
+            self.renderer.tactics_enabled = not self.renderer.tactics_enabled
+        if event.key == pygame.K_i:
+            self.renderer.influence_enabled = not self.renderer.influence_enabled
 
 
 if __name__ == "__main__":

@@ -72,11 +72,9 @@ class Soldier(Movable):
     def draw(self, renderer):
         health_factor = self.health / self.max_health
         color = self.army.color if self.army else self.DEFAULT_COLOR
-        current_color = [max(part * health_factor, 0) for part in color]
-        renderer.draw_circle(current_color,
-                           [int(self.pos.x), int(self.pos.y)], self.radius)#TODO just pass in loc.pos?
-        renderer.draw_circle(Colors.black,
-                           [int(self.pos.x), int(self.pos.y)], self.radius, 1)
+        current_color = [max(int(part * health_factor), 0) for part in color]
+        renderer.draw_circle(current_color, self.pos, self.radius)
+        renderer.draw_circle(Colors.black, self.pos, self.radius, 1)
 
         self.weapon.draw(renderer)
 
@@ -102,14 +100,17 @@ class Soldier(Movable):
         if self.weapon:
             self.weapon.activate()
 
+    def get_attack_range(self):
+        if not self.weapon:
+            return 0
+        return self.weapon.attack_range
+
 
 class Swordsperson(Soldier):
     def __init__(self):
         super(Swordsperson, self).__init__()
         self.max_velocity = 120
-        self.max_vel_accel = 40
         self.max_rotation = 300
-        self.max_rot_accel = 80
         self.max_health = 100
         self.health = self.max_health
         self.behavior_tree = BehaviorTree("swordsman")
@@ -121,9 +122,7 @@ class Archer(Soldier):
     def __init__(self):
         super(Archer, self).__init__()
         self.max_velocity = 150
-        self.max_vel_accel = 60
         self.max_rotation = 300
-        self.max_rot_accel = 80
         self.max_health = 60
         self.health = self.max_health
         self.behavior_tree = BehaviorTree("archer")
