@@ -17,6 +17,10 @@ def normalize_rotation(rotation):
     return rotation
 
 
+def vec_to_ints(vec):
+    return int(vec.x), int(vec.y)
+
+
 class FrameTimer:
     """
     Keeps track of and controls frame rate

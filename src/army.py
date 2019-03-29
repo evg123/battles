@@ -10,6 +10,8 @@ from src.formation import FormationLoader
 class Army(Movable):
 
     ANCHOR_RADIUS = 15
+    MARCH_SPEED = 90
+    ROTATION_SPEED = 40
 
     next_id = 1
 
@@ -25,6 +27,8 @@ class Army(Movable):
         self.color = color
         self.waypoint = Vector2()
         self.formations = []
+        self.max_velocity = self.MARCH_SPEED
+        self.max_rotation = self.ROTATION_SPEED
 
     def set_waypoint(self, xpos, ypos):
         self.waypoint.x = xpos
@@ -41,15 +45,17 @@ class Army(Movable):
 
     def draw(self, renderer):
         if renderer.tactics_enabled:
-            renderer.draw.circle(renderer.window, self.color, self.pos, self.ANCHOR_RADIUS)
+            renderer.draw_circle(self.color, self.pos, self.ANCHOR_RADIUS)
         for form in self.formations:
             form.draw(renderer)
 
     def add_formation(self, formation_name, x_pos, y_pos):
         form = FormationLoader.load(formation_name)
         form.set_army(self)
+        form.pos.x = x_pos
+        form.pos.y = y_pos
         form.army_offset.x = x_pos - self.pos.x
-        form.army_offset.x = y_pos - self.pos.y
+        form.army_offset.y = y_pos - self.pos.y
         self.formations.append(form)
 
 

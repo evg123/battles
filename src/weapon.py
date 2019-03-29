@@ -56,7 +56,7 @@ class Sword(Weapon):
         self.swing_time = self.INACTIVE
         self.length = 22
         self.width = 5
-        self.attack_range = self.length
+        self.attack_range = self.length + self.FINAL_DIST_OFFSET
 
         # Offset from wielder
         self.dist_offset = self.START_DIST_OFFSET
