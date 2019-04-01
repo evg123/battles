@@ -1,6 +1,7 @@
 """
 Class representing a formation of soldiers
 """
+import os
 from pygame import Vector2
 from src.movable import Movable
 from src.behavior import BehaviorTree
@@ -82,12 +83,14 @@ class Formation(Movable):
             soldier.formation = self
             soldier.army = self.army
             if snap_to_location:
-                soldier.set_position(self.pos.x, self.pos.y)
+                soldier.set_position_vec(self.pos + best_slot.formation_offset)
             return True
         return False
 
 
 class FormationLoader:
+
+    FORMATION_DIRECTORY = "./formations"
 
     EMPTY = 'X'
     SLOT_MAP = {
@@ -98,9 +101,17 @@ class FormationLoader:
     SLOT_WIDTH = 20
     SLOT_HEIGHT = 20
 
-    @staticmethod
-    def file_path_from_name(name):
-        return f"./formations/{name}"
+    available_formations = []
+
+    @classmethod
+    def find_formations(cls):
+        for form_file in os.listdir(cls.FORMATION_DIRECTORY):
+            if not os.path.isfile(form_file):
+                continue
+            form = cls.load(form_file)
+            cls.available_formations.append(form)
+        if not cls.available_formations:
+            raise FileNotFoundError(f"No formation files found in {cls.FORMATION_DIRECTORY}")
 
     @staticmethod
     def offsets_from_coords(row, column, formation_width, formation_height):
@@ -111,8 +122,7 @@ class FormationLoader:
         return x_off, y_off
 
     @staticmethod
-    def load(formation_name):
-        file_path = FormationLoader.file_path_from_name(formation_name)
+    def load(file_path):
         try:
             with open(file_path) as def_file:
                 lines = def_file.readlines()
@@ -128,7 +138,7 @@ class FormationLoader:
                         # This space in the grid is not set to a role
                         continue
                     if slot_char not in FormationLoader.SLOT_MAP:
-                        raise InvalidFormation(f"Formation {formation_name} contains an invalid slot specifier: '{orig_slot_char}'")
+                        raise InvalidFormation(f"Formation file {file_path} contains an invalid slot specifier: '{orig_slot_char}'")
                     type = FormationLoader.SLOT_MAP[slot_char]
                     x_off, y_off = FormationLoader.offsets_from_coords(row, column, formation_width, formation_height)
                     slot = Slot(type, x_off, y_off)
