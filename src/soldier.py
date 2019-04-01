@@ -44,6 +44,9 @@ class Soldier(Movable):
             self.facing = facing
         self.weapon.wielder_update(self.pos, self.facing)
 
+    def set_position_vec(self, pos_vector):
+        self.set_position(pos_vector.x, pos_vector.y)
+
     def update(self, delta):
         # Countdown to removal if needed
         if not self.is_alive():

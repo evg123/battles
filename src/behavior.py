@@ -135,12 +135,12 @@ class BehaviorTree:
         rot_size = abs(rotation)
         if rot_size < stop_radius:
             goal_rot = 0
-        elif rot_size > slow_radius:
-            goal_rot = movable.max_rotation
         else:
-            goal_rot = movable.max_rotation * rot_size / slow_radius
-
-        goal_rot *= rotation / rot_size
+            if rot_size > slow_radius:
+                goal_rot = movable.max_rotation
+            else:
+                goal_rot = movable.max_rotation * rot_size / slow_radius
+            goal_rot *= rotation / rot_size
         movable.add_rotation_steering(goal_rot - movable.rotation)
         return True
 

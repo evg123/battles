@@ -5,15 +5,17 @@ from pygame import Vector2
 from src.movable import Movable
 from src.behavior import BehaviorTree
 from src.formation import FormationLoader
+from src.graphics import Colors
 
 
 class Army(Movable):
 
+    COLORS = [Colors.orangered, Colors.darkgreen, Colors.darkblue]
     ANCHOR_RADIUS = 15
     MARCH_SPEED = 90
     ROTATION_SPEED = 40
 
-    next_id = 1
+    next_id = 0
 
     @classmethod
     def get_id(cls):
@@ -21,10 +23,10 @@ class Army(Movable):
         cls.next_id += 1
         return sid
 
-    def __init__(self, color):
+    def __init__(self):
         super(Army, self).__init__()
         self.my_id = Army.get_id()
-        self.color = color
+        self.color = self.COLORS[self.my_id] #TODO handle out of colors
         self.waypoint = Vector2()
         self.formations = []
         self.max_velocity = self.MARCH_SPEED
