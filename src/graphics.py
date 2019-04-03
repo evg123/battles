@@ -22,7 +22,7 @@ class Renderer:
         self.draw = pygame.draw
         pygame.display.set_caption(window_title)
         self.window = pygame.display.set_mode(screen_size)
-        self.tactics_enabled = False
+        self.tactics_enabled = True
         self.influence_enabled = False
 
     def start_frame(self):
@@ -36,6 +36,9 @@ class Renderer:
 
     def draw_circle(self, color, position, radius, width=0):
         pygame.draw.circle(self.window, color, util.vec_to_ints(position), radius, width)
+
+    def draw_rect(self, color, rect, width=0):
+        pygame.draw.rect(self.window, color, rect, width)
 
     def draw_text(self, color, position, size, text):
         #TODO

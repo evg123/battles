@@ -2,7 +2,10 @@
 Class representing a formation of soldiers
 """
 import os
+import itertools
+import copy
 from pygame import Vector2
+import src.util as util
 from src.movable import Movable
 from src.behavior import BehaviorTree
 from src.graphics import Colors
@@ -37,10 +40,13 @@ class Slot:
     def assign_soldier(self, soldier):
         self.soldier_id = soldier.my_id
 
+    def clear_soldier(self):
+        self.soldier_id = self.EMPTY
+
 
 class Formation(Movable):
 
-    ANCHOR_RADIUS = 2
+    ANCHOR_RADIUS = 4
 
     def __init__(self):
         super(Formation, self).__init__()
@@ -54,6 +60,10 @@ class Formation(Movable):
         self.max_rotation = army.max_rotation
         for slot in self.slots:
             slot.color = self.army.color
+
+    def refresh_army_offset(self):
+        self.army_offset.x = self.pos.x - self.army.pos.x
+        self.army_offset.y = self.pos.y - self.army.pos.y
 
     def update(self, delta, army_pos):
         #TODO update max speed to match slowest unit
@@ -87,10 +97,19 @@ class Formation(Movable):
             return True
         return False
 
+    def remove_soldier(self, soldier_id):
+        for slot in self.slots:
+            if slot.soldier_id == soldier_id:
+                slot.clear_soldier()
+
+    def anchor_overlaps(self, x_pos, y_pos):
+        dist = util.distance(self.pos.x, self.pos.y, x_pos, y_pos)
+        return dist <= self.ANCHOR_RADIUS
+
 
 class FormationLoader:
 
-    FORMATION_DIRECTORY = "./formations"
+    FORMATION_DIRECTORY = os.path.normpath("./formations")
 
     EMPTY = 'X'
     SLOT_MAP = {
@@ -101,17 +120,30 @@ class FormationLoader:
     SLOT_WIDTH = 20
     SLOT_HEIGHT = 20
 
-    available_formations = []
+    available_formations = {}
+    formation_cycle = None
+
+    @classmethod
+    def get_next_template(cls):
+        form = next(cls.formation_cycle)
+        return copy.deepcopy(form)
+
+    @classmethod
+    def get_for_name(cls, formation_name):
+        form = cls.available_formations[formation_name]
+        return copy.deepcopy(form)
 
     @classmethod
     def find_formations(cls):
-        for form_file in os.listdir(cls.FORMATION_DIRECTORY):
+        for base_name in os.listdir(cls.FORMATION_DIRECTORY):
+            form_file = os.path.join(cls.FORMATION_DIRECTORY, base_name)
             if not os.path.isfile(form_file):
                 continue
             form = cls.load(form_file)
-            cls.available_formations.append(form)
+            cls.available_formations[base_name] = form
         if not cls.available_formations:
             raise FileNotFoundError(f"No formation files found in {cls.FORMATION_DIRECTORY}")
+        cls.formation_cycle = itertools.cycle(cls.available_formations.values())
 
     @staticmethod
     def offsets_from_coords(row, column, formation_width, formation_height):

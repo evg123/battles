@@ -2,6 +2,7 @@
 Implementation of behavior trees
 """
 
+import os
 import json
 from pygame import Vector2
 import src.util as util
@@ -41,7 +42,7 @@ class Blackboard:
 class TreeLoader:
     @staticmethod
     def file_path_from_name(tree_name):
-        return f"./behaviors/{tree_name}.json"
+        return os.path.normpath(f"./behaviors/{tree_name}.json")
 
     @staticmethod
     def node_from_string(node_type_name):
