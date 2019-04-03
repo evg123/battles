@@ -1,6 +1,7 @@
 """
 Class representing a soldier
 """
+import itertools
 import src.util as util
 from src.graphics import Colors
 from src.weapon import Sword, Bow
@@ -89,8 +90,8 @@ class Soldier(Movable):
     def take_damage(self, damage):
         self.health -= damage
 
-    def overlaps(self, xpos, ypos):
-        dist = util.distance(self.pos.x, self.pos.y, xpos, ypos)
+    def overlaps(self, x_pos, y_pos):
+        dist = util.distance(self.pos.x, self.pos.y, x_pos, y_pos)
         return dist <= self.radius
 
     def is_alive(self):
@@ -107,6 +108,10 @@ class Soldier(Movable):
         if not self.weapon:
             return 0
         return self.weapon.attack_range
+
+    def cleanup(self):
+        if self.formation:
+            self.formation.remove_soldier()
 
 
 class Swordsperson(Soldier):
@@ -133,5 +138,11 @@ class Archer(Soldier):
         self.slot_costs = (10, 100, 0)
 
 
+class SoldierLoader:
+    SOLDIER_TYPES = (Swordsperson, Archer)
+    soldier_types = itertools.cycle(SOLDIER_TYPES)
 
+    @classmethod
+    def get_next_type(cls):
+        return next(cls.soldier_types)
 

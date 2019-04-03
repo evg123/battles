@@ -18,7 +18,10 @@ def normalize_rotation(rotation):
 
 
 def vec_to_ints(vec):
-    return int(vec.x), int(vec.y)
+    try:
+        return int(vec.x), int(vec.y)
+    except AttributeError:
+        return int(vec[0]), int(vec[1])
 
 
 class FrameTimer:

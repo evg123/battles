@@ -1,13 +1,16 @@
 """
 Main class with game loop
 """
+import itertools
+import copy
 import pygame
 from src.util import FrameTimer
 from src.graphics import Renderer, Colors
+from src.ui import Ui
 from src.army import Army
-from src.soldier import Swordsperson, Archer
+from src.soldier import Soldier, Swordsperson, Archer, SoldierLoader
 from src.behavior import BehaviorTree, Blackboard
-from src.formation import FormationLoader
+from src.formation import FormationLoader, Formation
 
 
 # Game states
@@ -27,9 +30,12 @@ class Battles:
     WINDOW_TITLE = "Battle Demo"
     SCREEN_SIZE = (1280, 720)
 
+    SOLDIER_TYPES = (Swordsperson, Archer)
+
     def __init__(self):
         pygame.init()
         self.renderer = Renderer(self.WINDOW_TITLE, self.SCREEN_SIZE)
+        self.ui = Ui(self.renderer)
         self._running = True
         self._paused = False
         self._mode = GameModes.WATCH
@@ -38,26 +44,32 @@ class Battles:
         self.soldiers = {}
         self.buttons = []
         self.active_army = None
+        self.active_formation = None
+        self.active_soldier = None
         FormationLoader.find_formations()
-        self.active_formation_type = FormationLoader.available_formations[0]
+        self.formation_types = itertools.cycle(FormationLoader.available_formations)
+        self.active_formation_template = FormationLoader.get_next_template()
+        self.active_soldier_type = SoldierLoader.get_next_type()
 
     def create_army(self, position):
         army = Army()
-        army.pos.x = position[0]
-        army.pos.y = position[1]
+        army.pos.x = army.waypoint.x = position[0]
+        army.pos.y = army.waypoint.y = position[1]
         self.armies[army.my_id] = army
+        self.active_army = army
         return army
 
-    def create_soldier(self, soldier_class):
+    def create_soldier(self, soldier_class, make_active=True):
         soldier = soldier_class()
-        self.soldiers[soldier.my_id] = soldier
+        if make_active:
+            self.soldiers[soldier.my_id] = soldier
         return soldier
 
     def setup(self):
         # Left Army
         army = self.create_army((200, 350))
-        army.add_formation("basic_1", 150, 300)
-        army.add_formation("basic_1", 200, 400)
+        army.add_formation(FormationLoader.get_for_name("basic_1"), 150, 300)
+        army.add_formation(FormationLoader.get_for_name("basic_1"), 200, 400)
 
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
@@ -79,9 +91,9 @@ class Battles:
 
         # Right Army
         army = self.create_army((1080, 350))
-        army.add_formation("basic_1", 1080, 200)
-        army.add_formation("basic_1", 1080, 350)
-        army.add_formation("basic_1", 1080, 500)
+        army.add_formation(FormationLoader.get_for_name("basic_1"), 1080, 200)
+        army.add_formation(FormationLoader.get_for_name("basic_1"), 1080, 350)
+        army.add_formation(FormationLoader.get_for_name("basic_1"), 1080, 500)
 
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
@@ -159,10 +171,57 @@ class Battles:
         for soldier in self.soldiers.values():
             soldier.draw(self.renderer)
 
+        self.ui.draw()
+        self.draw_cursor()
+
         self.renderer.end_frame()
 
+    def draw_cursor(self):
+        cursor_pos = pygame.mouse.get_pos()
+        if self._mode == GameModes.PLACE_ARMY:
+            self.renderer.draw_circle(Army.next_color(), cursor_pos, Army.ANCHOR_RADIUS)
+        if self._mode == GameModes.SET_ARMY_WAYPOINT:
+            self.renderer.draw_line(self.active_army.color, self.active_army.pos, cursor_pos)
+            self.renderer.draw_circle(self.active_army.color, cursor_pos, Army.WAYPOINT_RADIUS)
+        elif self.active_formation:
+            self.active_formation.pos.x = cursor_pos[0]
+            self.active_formation.pos.y = cursor_pos[1]
+            self.active_formation.draw(self.renderer) #TODO don't double draw if moving a placed formation
+        elif self.active_soldier:
+            self.active_soldier.pos.x = cursor_pos[0]
+            self.active_soldier.pos.y = cursor_pos[1]
+            self.active_soldier.draw(self.renderer)
+
+    def reset_mode_attrs(self):
+        self.active_soldier = None
+        self.active_formation = None
+
     def set_mode(self, mode):
+        mode_changed = mode != self._mode
+        if mode == GameModes.WATCH:
+            self.reset_mode_attrs()
+        elif mode == GameModes.PLACE_SOLDIER:
+            if not mode_changed:
+                self.active_soldier_type = SoldierLoader.get_next_type()
+            self.active_soldier = self.create_soldier(self.active_soldier_type, False)
+        elif mode == GameModes.PLACE_FORMATION:
+            if not mode_changed:
+                self.active_formation_template = FormationLoader.get_next_template()
+            self.active_formation = copy.deepcopy(self.active_formation_template)
+            self.active_army.add_formation(self.active_formation, 0, 0)
+
         self._mode = mode
+
+    def remove_army(self, army_id):
+        sldr_ids_to_remove = [sldr.my_id for sldr in self.soldiers if sldr.army.my_id == army_id]
+        for soldier_id in sldr_ids_to_remove:
+            del self.soldiers[soldier_id]
+        del self.armies[army_id]
+
+    def remove_soldier(self, soldier_id):
+        soldier = self.soldiers[soldier_id]
+        soldier.cleanup()
+        del self.soldiers[soldier_id]
 
     def handle_keypress(self, event):
         if event.key == pygame.K_h:
@@ -187,21 +246,80 @@ class Battles:
     def handle_mouse_click(self, event):
         if event.button != 1:
             return
-        if self._mode == GameModes.PLACE_ARMY:
+
+        if self.ui.handle_click(event.pos[0], event.pos[1]):
+            # The click was consumed by the UI
+            return
+
+        if self._mode == GameModes.WATCH:
+            self.activate_at_pos(event.pos[0], event.pos[1])
+        elif self._mode == GameModes.PLACE_ARMY:
             self.create_army(event.pos)
-        if self._mode == GameModes.PLACE_FORMATION:
-            self.active_army.add_formation(self.active_formation_type, event.pos.x, event.pos.y)
-        if self._mode == GameModes.PLACE_SOLDIER:
-            self.place_soldier(event.pos)
-        if self._mode == GameModes.SET_ARMY_WAYPOINT:
-            self.active_army.set_waypoint(event.pos.x, event.pos.y)
-        if self._mode == GameModes.MOVE_FORMATION:
+            self.set_mode(GameModes.WATCH)
+        elif self._mode == GameModes.PLACE_FORMATION:
+            self.active_army.add_formation(self.active_formation, event.pos[0], event.pos[1])
+            self.set_mode(GameModes.WATCH)
+        elif self._mode == GameModes.PLACE_SOLDIER:
+            self.place_soldier(event.pos[0], event.pos[1])
+            self.set_mode(GameModes.PLACE_SOLDIER)
+        elif self._mode == GameModes.SET_ARMY_WAYPOINT:
+            self.active_army.set_waypoint(event.pos[0], event.pos[1])
+            self.set_mode(GameModes.WATCH)
+        elif self._mode == GameModes.MOVE_FORMATION:
             self.active_formation.pos.x = event.pos[0]
             self.active_formation.pos.y = event.pos[1]
-        if self._mode == GameModes.MOVE_FORMATION:
-            self.remove_at(event.pos.x, event.pos.y)
+            self.active_formation.refresh_army_offset()
+            self.set_mode(GameModes.WATCH)
+        elif self._mode == GameModes.MOVE_FORMATION:
+            self.remove_at_pos(event.pos[0], event.pos[1])
 
+    def get_at_pos(self, x_pos, y_pos):
+        for army in self.armies.values():
+            if army.anchor_overlaps(x_pos, y_pos):
+                return army
+            for formation in army.formations:
+                if formation.anchor_overlaps(x_pos, y_pos):
+                    return formation
+        for soldier in self.soldiers.values():
+            if soldier.overlaps(x_pos, y_pos):
+                return soldier
+        return None
 
+    def activate_at_pos(self, x_pos, y_pos):
+        obj = self.get_at_pos(x_pos, y_pos)
+        if not obj:
+            return False
+        if isinstance(obj, Army):
+            self.active_army = obj
+            self.set_mode(GameModes.SET_ARMY_WAYPOINT)
+            return True
+        if isinstance(obj, Formation):
+            self.active_formation = obj
+            self.set_mode(GameModes.MOVE_FORMATION)
+            return True
+        return False
+
+    def remove_at_pos(self, x_pos, y_pos):
+        obj = self.get_at_pos(x_pos, y_pos)
+        if not obj:
+            return False
+        if isinstance(obj, Army):
+            self.remove_army(obj.my_id)
+            return True
+        if isinstance(obj, Formation):
+            obj.army.remove_formation(obj)
+            return True
+        if isinstance(obj, Soldier):
+            self.remove_soldier(obj.my_id)
+            return False
+        return False
+
+    def place_soldier(self, x_pos, y_pos):
+        obj = self.get_at_pos(x_pos, y_pos)
+        if obj and isinstance(obj, Formation) and obj.army == self.active_army:
+            obj.add_soldier(self.active_soldier)
+            self.soldiers[self.active_soldier.my_id] = self.active_soldier
+            self.active_soldier = None
 
 
 if __name__ == "__main__":
