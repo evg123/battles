@@ -37,6 +37,7 @@ class Soldier(Movable):
         self.weapon = None
         self.sight_range = 150
         self.slot_costs = (0, 0, 0)
+        self.stationary_timer = 0
 
     def set_position(self, x_pos, y_pos, facing=None):
         self.pos.x = x_pos
@@ -56,12 +57,17 @@ class Soldier(Movable):
                 self.weapon.deactivate()
             return
 
+        # countdown to being able to move again
+        self.stationary_timer -= delta
+
         # Slow healing over time
         self.heal(Soldier.HEALING_FACTOR * delta)
 
         self.reset_steering()
         self.behavior_tree.run(self, delta)
-        self.handle_steering(delta)
+        # Don't move if we are temporarily stationary
+        if self.stationary_timer <= 0:
+            self.handle_steering(delta)
 
         if self.weapon:
             self.weapon.wielder_update(self.pos, self.facing)
@@ -69,7 +75,7 @@ class Soldier(Movable):
 
     def interact(self, other):
         if self.weapon:
-            if self.weapon.hits_circle(other.pos, other.radius):
+            if self.army is not other.army and self.weapon.hits_circle(other.pos, other.radius):
                 other.take_damage(self.weapon.damage)
                 self.weapon.deactivate()
 
@@ -103,6 +109,7 @@ class Soldier(Movable):
     def attack(self):
         if self.weapon:
             self.weapon.activate()
+            self.stationary_timer = self.weapon.stationary_time
 
     def get_attack_range(self):
         if not self.weapon:

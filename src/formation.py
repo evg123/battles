@@ -81,6 +81,10 @@ class Formation(Movable):
             slot.draw(renderer, self.pos)
 
     def add_soldier(self, soldier, snap_to_location=True):
+        self.assign_to_best_available_slot(soldier, snap_to_location)
+        self.reassign()
+
+    def assign_to_best_available_slot(self, soldier, snap_to_location):
         best_slot = None
         best_score = float("inf")
         for slot in self.slots:
@@ -101,10 +105,17 @@ class Formation(Movable):
         for slot in self.slots:
             if slot.soldier_id == soldier_id:
                 slot.clear_soldier()
+        self.reassign()
 
     def anchor_overlaps(self, x_pos, y_pos):
         dist = util.distance(self.pos.x, self.pos.y, x_pos, y_pos)
         return dist <= self.ANCHOR_RADIUS
+
+    def reassign(self):
+        for slot in self.slots:
+            slot.soldier_id = Slot.EMPTY
+        for soldier in self.soldiers:
+            self.assign_to_best_slot(soldier)
 
 
 class FormationLoader:

@@ -154,7 +154,9 @@ class Battles:
 
     def clean_up(self):
         # Remove fully gone soldiers
-        self.soldiers = {sid: soldier for sid, soldier in self.soldiers.items() if not soldier.needs_removal()}
+        remove_ids = [soldier.my_id for soldier in self.soldiers.values() if soldier.needs_removal()]
+        for soldier_id in remove_ids:
+            self.remove_soldier(soldier_id)
 
     def toggle_pause(self):
         self._paused = not self._paused
