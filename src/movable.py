@@ -19,6 +19,12 @@ class Movable:
         self.max_rotation = 0
         self.max_rot_accel = 80
 
+    def set_position(self, x_pos, y_pos, facing=None):
+        self.pos.x = x_pos
+        self.pos.y = y_pos
+        if facing is not None:
+            self.facing = facing
+
     def reset_steering(self):
         self.velocity_steering.x = 0
         self.velocity_steering.y = 0

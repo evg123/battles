@@ -38,12 +38,10 @@ class Soldier(Movable):
         self.sight_range = 150
         self.slot_costs = (0, 0, 0)
         self.stationary_timer = 0
+        self.flee_range = 0
 
     def set_position(self, x_pos, y_pos, facing=None):
-        self.pos.x = x_pos
-        self.pos.y = y_pos
-        if facing is not None:
-            self.facing = facing
+        super(Soldier, self).set_position(x_pos, y_pos, facing)
         self.weapon.wielder_update(self.pos, self.facing)
 
     def set_position_vec(self, pos_vector):
@@ -116,6 +114,9 @@ class Soldier(Movable):
             return 0
         return self.weapon.attack_range
 
+    def get_flee_range(self):
+        return self.flee_range
+
     def cleanup(self):
         if self.formation:
             self.formation.remove_soldier()
@@ -143,6 +144,7 @@ class Archer(Soldier):
         self.behavior_tree = BehaviorTree("archer")
         self.weapon = Bow()
         self.slot_costs = (10, 100, 0)
+        self.flee_range = 100
 
 
 class SoldierLoader:
