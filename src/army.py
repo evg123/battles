@@ -60,8 +60,7 @@ class Army(Movable):
 
     def add_formation(self, formation, x_pos, y_pos):
         formation.set_army(self)
-        formation.pos.x = x_pos
-        formation.pos.y = y_pos
+        formation.set_position(x_pos, y_pos, self.facing)
         formation.refresh_army_offset()
         self.formations.append(formation)
 

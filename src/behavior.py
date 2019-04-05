@@ -110,8 +110,12 @@ class BehaviorTree:
         return self.root.run(soldier, delta)
 
     @staticmethod
-    def arrive(movable, destination, slow_radius=ARRIVE_SLOW_RADIUS, stop_radius=ARRIVE_STOP_RADIUS):
-        direction = destination - movable.pos
+    def arrive(movable, destination, flee=False,
+               slow_radius=ARRIVE_SLOW_RADIUS, stop_radius=ARRIVE_STOP_RADIUS):
+        if flee:
+            direction = movable.pos - destination
+        else:
+            direction = destination - movable.pos
         dist = direction.length()
         if dist < stop_radius:
             goal_speed = 0
@@ -215,33 +219,66 @@ class BehaviorTree:
                 return False
             return BehaviorTree.aim(soldier, waypoint)
 
+    class FleeTarget(LeafNode):
+        def run(self, soldier, delta):
+            target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
+            if not target or not target.is_alive():
+                return False
+            return BehaviorTree.arrive(soldier, target.pos, flee=True)
+
+    class HasTarget(LeafNode):
+        def run(self, soldier, delta):
+            target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
+            if target is None or not target.is_alive():
+                return False
+            return True
+
     class TargetEnemy(LeafNode):
         def run(self, soldier, delta):
             soldiers = BehaviorTree.board()[Blackboard.SOLDIERS]
-            #TODO select randomly instead of the first one you find
+            closest_enemy = None
+            closest_dist = float("inf")
             for enemy in soldiers.values():
                 if enemy.army == soldier.army:
                     # Same team
                     continue
-                if soldier.pos.distance_to(enemy.pos) <= soldier.sight_range:
-                    BehaviorTree.board()[Blackboard.TARGET][soldier.my_id] = enemy
-                    return True
-            return False
+                if not enemy.is_alive():
+                    continue
+                dist = soldier.pos.distance_to(enemy.pos)
+                if dist <= soldier.sight_range and dist <= closest_dist:
+                    # This is the closest so far
+                    closest_enemy = enemy
+                    closest_dist = dist
+            if not closest_enemy:
+                # No enemies in range
+                return False
+            BehaviorTree.board()[Blackboard.TARGET][soldier.my_id] = closest_enemy
+            return True
 
-    class TargetInRange(LeafNode):
+    class TargetInAttackRange(LeafNode):
         def run(self, soldier, delta):
             target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
             if not target or not target.is_alive():
                 return False
             return soldier.pos.distance_to(target.pos) <= soldier.get_attack_range()
 
+    class TargetInFleeRange(LeafNode):
+        def run(self, soldier, delta):
+            target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)
+            if not target or not target.is_alive():
+                return False
+            return soldier.pos.distance_to(target.pos) <= soldier.get_flee_range()
+
     class Attack(LeafNode):
         def run(self, soldier, delta):
             soldier.attack()
+            return True
 
-    class TakeArmyWaypoint(LeafNode):
+    class TakeFormationWaypoint(LeafNode):
         def run(self, soldier, delta):
-            army = soldier.army
-            BehaviorTree.board()[Blackboard.WAYPOINT][soldier.my_id] = army.waypoint
+            if not soldier.formation:
+                return False
+            waypoint = soldier.formation.get_soldier_slot_position(soldier.my_id)
+            BehaviorTree.board()[Blackboard.WAYPOINT][soldier.my_id] = waypoint
             return True
 

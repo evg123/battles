@@ -1,14 +1,14 @@
 ["Sequence",
-    ["Selector",
-        "HasTarget",
-        "TargetEnemy"
-    ],
+    "TargetEnemy",
     "AimTarget",
-    ["Selector",
+    ["Sequence",
         ["Sequence",
             "TargetInAttackRange",
             "Attack"
         ],
-        "ArriveTarget"
+        ["Sequence",
+            "TargetInFleeRange",
+            "FleeTarget"
+        ]
     ]
 ]

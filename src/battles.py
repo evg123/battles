@@ -53,8 +53,9 @@ class Battles:
 
     def create_army(self, position):
         army = Army()
-        army.pos.x = army.waypoint.x = position[0]
-        army.pos.y = army.waypoint.y = position[1]
+        army.set_position(position[0], position[1])
+        army.waypoint.x = position[0]
+        army.waypoint.y = position[1]
         self.armies[army.my_id] = army
         self.active_army = army
         return army
@@ -63,6 +64,7 @@ class Battles:
         soldier = soldier_class()
         if make_active:
             self.soldiers[soldier.my_id] = soldier
+        soldier.army = self.active_army
         return soldier
 
     def setup(self):
@@ -186,12 +188,10 @@ class Battles:
             self.renderer.draw_line(self.active_army.color, self.active_army.pos, cursor_pos)
             self.renderer.draw_circle(self.active_army.color, cursor_pos, Army.WAYPOINT_RADIUS)
         elif self.active_formation:
-            self.active_formation.pos.x = cursor_pos[0]
-            self.active_formation.pos.y = cursor_pos[1]
+            self.active_formation.set_position(cursor_pos[0], cursor_pos[1])
             self.active_formation.draw(self.renderer) #TODO don't double draw if moving a placed formation
         elif self.active_soldier:
-            self.active_soldier.pos.x = cursor_pos[0]
-            self.active_soldier.pos.y = cursor_pos[1]
+            self.active_soldier.set_position(cursor_pos[0], cursor_pos[1])
             self.active_soldier.draw(self.renderer)
 
     def reset_mode_attrs(self):
@@ -203,16 +203,28 @@ class Battles:
         if mode == GameModes.WATCH:
             self.reset_mode_attrs()
         elif mode == GameModes.PLACE_SOLDIER:
-            if not mode_changed:
-                self.active_soldier_type = SoldierLoader.get_next_type()
-            self.active_soldier = self.create_soldier(self.active_soldier_type, False)
+            self.refresh_active_soldier()
         elif mode == GameModes.PLACE_FORMATION:
-            if not mode_changed:
-                self.active_formation_template = FormationLoader.get_next_template()
-            self.active_formation = copy.deepcopy(self.active_formation_template)
-            self.active_army.add_formation(self.active_formation, 0, 0)
+            self.refresh_active_formation()
 
         self._mode = mode
+
+    def refresh_active_soldier(self):
+        if not self.active_soldier or not isinstance(self.active_soldier, self.active_soldier_type):
+            self.active_soldier = self.create_soldier(self.active_soldier_type, False)
+
+    def refresh_active_formation(self):
+        if not self.active_formation or not self.active_formation.name == self.active_formation_template.name:
+            self.active_formation = copy.deepcopy(self.active_formation_template)
+            self.active_formation.set_army(self.active_army)
+
+    def cycle_soldier_type(self):
+        self.active_soldier_type = SoldierLoader.get_next_type()
+        self.refresh_active_soldier()
+
+    def cycle_formation_type(self):
+        self.active_formation_template = FormationLoader.get_next_template()
+        self.refresh_active_formation()
 
     def remove_army(self, army_id):
         sldr_ids_to_remove = [sldr.my_id for sldr in self.soldiers if sldr.army.my_id == army_id]
@@ -239,9 +251,15 @@ class Battles:
         if event.key == pygame.K_a:
             self.set_mode(GameModes.PLACE_ARMY)
         if event.key == pygame.K_f:
-            self.set_mode(GameModes.PLACE_FORMATION)
+            if self._mode == GameModes.PLACE_FORMATION:
+                self.cycle_formation_type()
+            else:
+                self.set_mode(GameModes.PLACE_FORMATION)
         if event.key == pygame.K_s:
-            self.set_mode(GameModes.PLACE_SOLDIER)
+            if self._mode == GameModes.PLACE_SOLDIER:
+                self.cycle_soldier_type()
+            else:
+                self.set_mode(GameModes.PLACE_SOLDIER)
         if event.key == pygame.K_x or event.key == pygame.K_r:
             self.set_mode(GameModes.REMOVE)
 
@@ -262,14 +280,13 @@ class Battles:
             self.active_army.add_formation(self.active_formation, event.pos[0], event.pos[1])
             self.set_mode(GameModes.WATCH)
         elif self._mode == GameModes.PLACE_SOLDIER:
-            self.place_soldier(event.pos[0], event.pos[1])
-            self.set_mode(GameModes.PLACE_SOLDIER)
+            if self.place_soldier(event.pos[0], event.pos[1]):
+                self.set_mode(GameModes.PLACE_SOLDIER)
         elif self._mode == GameModes.SET_ARMY_WAYPOINT:
             self.active_army.set_waypoint(event.pos[0], event.pos[1])
             self.set_mode(GameModes.WATCH)
         elif self._mode == GameModes.MOVE_FORMATION:
-            self.active_formation.pos.x = event.pos[0]
-            self.active_formation.pos.y = event.pos[1]
+            self.active_formation.set_position(event.pos[0], event.pos[1])
             self.active_formation.refresh_army_offset()
             self.set_mode(GameModes.WATCH)
         elif self._mode == GameModes.MOVE_FORMATION:
@@ -319,9 +336,11 @@ class Battles:
     def place_soldier(self, x_pos, y_pos):
         obj = self.get_at_pos(x_pos, y_pos)
         if obj and isinstance(obj, Formation) and obj.army == self.active_army:
-            obj.add_soldier(self.active_soldier)
-            self.soldiers[self.active_soldier.my_id] = self.active_soldier
-            self.active_soldier = None
+            if obj.add_soldier(self.active_soldier):
+                self.soldiers[self.active_soldier.my_id] = self.active_soldier
+                self.active_soldier = None
+                return True
+        return False
 
 
 if __name__ == "__main__":

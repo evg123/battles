@@ -19,16 +19,15 @@ class Slot:
 
     FONT_SIZE = 12
     ANY, FIGHTER, RANGED = range(3)
-    EMPTY = 0
 
     def __init__(self, type, x_off, y_off):
         self.formation_offset = Vector2(x_off, y_off)
         self.type = type
-        self.soldier_id = self.EMPTY
+        self.soldier = None
         self.color = None
 
     def get_score_for_soldier(self, soldier):
-        if self.soldier_id != self.EMPTY:
+        if self.soldier:
             return None
         return soldier.slot_costs[self.type]
 
@@ -38,18 +37,19 @@ class Slot:
             renderer.draw_text(self.color, formation_pos + self.formation_offset, self.FONT_SIZE, "X")
 
     def assign_soldier(self, soldier):
-        self.soldier_id = soldier.my_id
+        self.soldier = soldier
 
     def clear_soldier(self):
-        self.soldier_id = self.EMPTY
+        self.soldier = None
 
 
 class Formation(Movable):
 
     ANCHOR_RADIUS = 4
 
-    def __init__(self):
+    def __init__(self, name):
         super(Formation, self).__init__()
+        self.name = name
         self.army_offset = Vector2()
         self.slots = []
         self.army = None
@@ -81,8 +81,10 @@ class Formation(Movable):
             slot.draw(renderer, self.pos)
 
     def add_soldier(self, soldier, snap_to_location=True):
-        self.assign_to_best_available_slot(soldier, snap_to_location)
-        self.reassign()
+        if self.assign_to_best_available_slot(soldier, snap_to_location):
+            self.reassign()
+            return True
+        return False
 
     def assign_to_best_available_slot(self, soldier, snap_to_location):
         best_slot = None
@@ -112,10 +114,21 @@ class Formation(Movable):
         return dist <= self.ANCHOR_RADIUS
 
     def reassign(self):
+        soldiers = []
         for slot in self.slots:
-            slot.soldier_id = Slot.EMPTY
-        for soldier in self.soldiers:
-            self.assign_to_best_slot(soldier)
+            if slot.soldier:
+                soldiers.append(slot.soldier)
+                slot.clear_soldier()
+        for soldier in soldiers:
+            self.assign_to_best_available_slot(soldier, snap_to_location=False)
+
+    def get_soldier_slot_position(self, soldier_id):
+        #TODO slots should be a dict of soldierid to slot
+        for slot in self.slots:
+            if slot.soldier and slot.soldier.my_id == soldier_id:
+                pos = self.pos + slot.formation_offset
+                return pos
+        return None
 
 
 class FormationLoader:
@@ -169,7 +182,7 @@ class FormationLoader:
         try:
             with open(file_path) as def_file:
                 lines = def_file.readlines()
-            formation = Formation()
+            formation = Formation(file_path)
             formation_width = len(max(lines, key=len))
             formation_height = len(lines)
             for row in range(len(lines)):
