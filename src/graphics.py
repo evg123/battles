@@ -6,7 +6,7 @@ import src.util as util
 
 
 class PygameColors(type):
-    def __getattr__(self, item):
+    def __getattr__(cls, item):
         return pygame.color.THECOLORS.get(item)
 
 

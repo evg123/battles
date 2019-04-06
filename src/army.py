@@ -5,14 +5,13 @@ from pygame import Vector2
 import src.util as util
 from src.movable import Movable
 from src.behavior import BehaviorTree
-from src.formation import FormationLoader
 from src.graphics import Colors
 
 
 class Army(Movable):
 
-    COLORS = [Colors.orangered, Colors.darkgreen, Colors.darkblue]
-    ANCHOR_RADIUS = 15
+    COLORS = [Colors.orangered, Colors.darkgreen, Colors.darkblue, Colors.purple, Colors.yellow]
+    ANCHOR_RADIUS = 12
     WAYPOINT_RADIUS = 15
     MARCH_SPEED = 90
     ROTATION_SPEED = 40

@@ -18,6 +18,7 @@ class Movable:
         self.rotation_steering = 0
         self.max_rotation = 0
         self.max_rot_accel = 80
+        self.stationary_timer = 0
 
     def set_position(self, x_pos, y_pos, facing=None):
         self.pos.x = x_pos
@@ -32,12 +33,14 @@ class Movable:
 
     def handle_steering(self, delta):
         # Velocity
-        if self.velocity_steering.length() > self.max_vel_accel:
-            self.velocity_steering.scale_to_length(self.max_vel_accel)
-        self.velocity += self.velocity_steering
-        if self.velocity.length() > self.max_velocity:
-            self.velocity.scale_to_length(self.max_velocity)
-        self.pos += self.velocity * delta
+        # Don't move if we are temporarily stationary
+        if self.stationary_timer <= 0:
+            if self.velocity_steering.length() > self.max_vel_accel:
+                self.velocity_steering.scale_to_length(self.max_vel_accel)
+            self.velocity += self.velocity_steering
+            if self.velocity.length() > self.max_velocity:
+                self.velocity.scale_to_length(self.max_velocity)
+            self.pos += self.velocity * delta
 
         # Rotation
         if self.rotation_steering > self.max_rot_accel:
@@ -57,4 +60,11 @@ class Movable:
         if steering > self.max_rot_accel:
             steering = self.max_rot_accel
         self.rotation += steering
+
+    def get_rotation_to_dest(self, destination):
+        direction = destination - self.pos
+        facing = Vector2(0, -1)
+        facing.rotate_ip(self.facing)
+        rotation = facing.angle_to(direction)
+        return util.normalize_rotation(rotation)
 
