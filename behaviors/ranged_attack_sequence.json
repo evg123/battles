@@ -1,11 +1,14 @@
 ["Sequence",
     "TargetEnemy",
     "AimTarget",
-    ["Sequence",
+    ["AlwaysTrue",
         ["Sequence",
             "TargetInAttackRange",
+            "FacingTarget",
             "Attack"
-        ],
+        ]
+    ],
+    ["AlwaysTrue",
         ["Sequence",
             "TargetInFleeRange",
             "FleeTarget"

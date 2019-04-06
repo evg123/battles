@@ -20,9 +20,9 @@ class Slot:
     FONT_SIZE = 12
     ANY, FIGHTER, RANGED = range(3)
 
-    def __init__(self, type, x_off, y_off):
+    def __init__(self, formation_type, x_off, y_off):
         self.formation_offset = Vector2(x_off, y_off)
-        self.type = type
+        self.type = formation_type
         self.soldier = None
         self.color = None
 
@@ -45,7 +45,7 @@ class Slot:
 
 class Formation(Movable):
 
-    ANCHOR_RADIUS = 4
+    ANCHOR_RADIUS = 6
 
     def __init__(self, name):
         super(Formation, self).__init__()
@@ -105,7 +105,7 @@ class Formation(Movable):
 
     def remove_soldier(self, soldier_id):
         for slot in self.slots:
-            if slot.soldier_id == soldier_id:
+            if slot.soldier.my_id == soldier_id:
                 slot.clear_soldier()
         self.reassign()
 
@@ -119,6 +119,7 @@ class Formation(Movable):
             if slot.soldier:
                 soldiers.append(slot.soldier)
                 slot.clear_soldier()
+        soldiers.sort(key=lambda x: x.my_id)
         for soldier in soldiers:
             self.assign_to_best_available_slot(soldier, snap_to_location=False)
 
@@ -185,19 +186,19 @@ class FormationLoader:
             formation = Formation(file_path)
             formation_width = len(max(lines, key=len))
             formation_height = len(lines)
-            for row in range(len(lines)):
-                line = lines[row]
-                for column in range(len(line)):
-                    orig_slot_char = line[column]
+            for row, line in enumerate(lines):
+                for column, orig_slot_char in enumerate(line):
                     slot_char = orig_slot_char.upper()
-                    if slot_char == ' ' or slot_char == '\n' or slot_char == FormationLoader.EMPTY:
+                    if slot_char in (' ', '\n', FormationLoader.EMPTY):
                         # This space in the grid is not set to a role
                         continue
                     if slot_char not in FormationLoader.SLOT_MAP:
-                        raise InvalidFormation(f"Formation file {file_path} contains an invalid slot specifier: '{orig_slot_char}'")
-                    type = FormationLoader.SLOT_MAP[slot_char]
-                    x_off, y_off = FormationLoader.offsets_from_coords(row, column, formation_width, formation_height)
-                    slot = Slot(type, x_off, y_off)
+                        raise InvalidFormation(f"Formation file {file_path} contains an invalid "
+                                               f"slot specifier: '{orig_slot_char}'")
+                    form_type = FormationLoader.SLOT_MAP[slot_char]
+                    x_off, y_off = FormationLoader.offsets_from_coords(row, column, formation_width,
+                                                                       formation_height)
+                    slot = Slot(form_type, x_off, y_off)
                     formation.slots.append(slot)
             return formation
         except FileNotFoundError:

@@ -37,7 +37,6 @@ class Soldier(Movable):
         self.weapon = None
         self.sight_range = 150
         self.slot_costs = (0, 0, 0)
-        self.stationary_timer = 0
         self.flee_range = 0
 
     def set_position(self, x_pos, y_pos, facing=None):
@@ -63,15 +62,15 @@ class Soldier(Movable):
 
         self.reset_steering()
         self.behavior_tree.run(self, delta)
-        # Don't move if we are temporarily stationary
-        if self.stationary_timer <= 0:
-            self.handle_steering(delta)
+        self.handle_steering(delta)
 
         if self.weapon:
             self.weapon.wielder_update(self.pos, self.facing)
             self.weapon.update(delta)
 
     def interact(self, other):
+        if not other.is_alive():
+            return
         if self.weapon:
             if self.army is not other.army and self.weapon.hits_circle(other.pos, other.radius):
                 other.take_damage(self.weapon.damage)
@@ -119,7 +118,7 @@ class Soldier(Movable):
 
     def cleanup(self):
         if self.formation:
-            self.formation.remove_soldier()
+            self.formation.remove_soldier(self.my_id)
 
 
 class Swordsperson(Soldier):

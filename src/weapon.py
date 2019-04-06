@@ -18,7 +18,7 @@ class Weapon:
     def update(self, delta):
         pass
 
-    def draw(self, window):
+    def draw(self, renderer):
         raise NotImplementedError()
 
     def wielder_update(self, pos, facing):
@@ -110,7 +110,7 @@ class Sword(Weapon):
 
 class Bow(Weapon):
     COLOR = Colors.brown
-    FIRING_SPEED = 1.2
+    FIRING_SPEED = 2.0
 
     def __init__(self):
         super(Bow, self).__init__()
@@ -160,6 +160,7 @@ class Bow(Weapon):
                 return True
         return False
 
+
 class Arrow(Weapon):
 
     COLOR = Colors.brown
@@ -171,10 +172,10 @@ class Arrow(Weapon):
         self.angle = angle
         self.length = 8
         self.width = 1
-        self.flight_speed = 400
-        self.max_distance = 400
+        self.flight_speed = 250
+        self.max_distance = 250
         self.distance = 0
-        self.hit = False # has the arrow connected?
+        self.hit = False  # has the arrow connected?
 
     def needs_removal(self):
         return self.distance > self.max_distance or self.hit
@@ -197,6 +198,5 @@ class Arrow(Weapon):
 
     def hits_circle(self, other_pos, other_radius):
         dist = other_pos.distance_to(self.pos)
-        hit = dist <= other_radius
-        self.hit = True
-        return hit
+        self.hit = dist <= other_radius
+        return self.hit
