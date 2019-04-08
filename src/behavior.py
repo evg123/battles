@@ -297,6 +297,8 @@ class BehaviorTree:
             if not soldier.formation:
                 return False
             waypoint = soldier.formation.get_soldier_slot_position(soldier.my_id)
+            if not waypoint:
+                return False
             BehaviorTree.board()[Blackboard.WAYPOINT][soldier.my_id] = waypoint
             return True
 

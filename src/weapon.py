@@ -118,7 +118,7 @@ class Bow(Weapon):
         self.damage = 20
         self.attack_range = 400
         self.fire_timer = 0
-        self.stationary_time = 0.5
+        self.stationary_time = 0.2
 
         # Offset from wielder
         self.dist_offset = 10
@@ -170,7 +170,7 @@ class Arrow(Weapon):
         self.pos.x = pos.x
         self.pos.y = pos.y
         self.angle = angle
-        self.length = 8
+        self.length = 9
         self.width = 1
         self.flight_speed = 250
         self.max_distance = 250

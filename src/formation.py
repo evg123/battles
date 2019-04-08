@@ -53,6 +53,10 @@ class Formation(Movable):
         self.army_offset = Vector2()
         self.slots = []
         self.army = None
+        self.valid = True  # Formations are invalidated while being moved
+
+    def get_soldiers(self):
+        return [slot.soldier for slot in self.slots if slot.soldier]
 
     def set_army(self, army):
         self.army = army
@@ -74,7 +78,9 @@ class Formation(Movable):
         BehaviorTree.arrive(self, destination)
         self.handle_steering(delta)
 
-    def draw(self, renderer):
+    def draw(self, renderer, override_valid=False):
+        if not self.valid and not override_valid:
+            return
         if renderer.tactics_enabled:
             renderer.draw_circle(self.army.color, self.pos, self.ANCHOR_RADIUS)
         for slot in self.slots:
@@ -105,7 +111,7 @@ class Formation(Movable):
 
     def remove_soldier(self, soldier_id):
         for slot in self.slots:
-            if slot.soldier.my_id == soldier_id:
+            if slot.soldier and slot.soldier.my_id == soldier_id:
                 slot.clear_soldier()
         self.reassign()
 
@@ -124,6 +130,8 @@ class Formation(Movable):
             self.assign_to_best_available_slot(soldier, snap_to_location=False)
 
     def get_soldier_slot_position(self, soldier_id):
+        if not self.valid:
+            return None
         #TODO slots should be a dict of soldierid to slot
         for slot in self.slots:
             if slot.soldier and slot.soldier.my_id == soldier_id:

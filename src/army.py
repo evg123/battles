@@ -63,6 +63,9 @@ class Army(Movable):
         formation.refresh_army_offset()
         self.formations.append(formation)
 
+    def remove_formation(self, formation):
+        self.formations = [form for form in self.formations if form is not formation]
+
     def anchor_overlaps(self, x_pos, y_pos):
         dist = util.distance(self.pos.x, self.pos.y, x_pos, y_pos)
         return dist <= self.ANCHOR_RADIUS
