@@ -44,3 +44,12 @@ class Renderer:
         #TODO
         pygame.draw.circle(self.window, color, util.vec_to_ints(position), 1)
 
+    def draw_x(self, color, position, radius, width=1):
+        pos = util.vec_to_ints(position)
+        top_left = pos[0] - radius, pos[1] - radius
+        bottom_left = pos[0] - radius, pos[1] + radius
+        top_right = pos[0] + radius, pos[1] - radius
+        bottom_right = pos[0] + radius, pos[1] + radius
+        pygame.draw.line(self.window, color, top_left, bottom_right, width)
+        pygame.draw.line(self.window, color, top_right, bottom_left, width)
+

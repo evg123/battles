@@ -70,8 +70,8 @@ class Battles:
     def setup(self):
         # Left Army
         army = self.create_army((200, 350))
-        army.add_formation(FormationLoader.get_for_name("basic_1"), 150, 300)
-        army.add_formation(FormationLoader.get_for_name("basic_1"), 200, 400)
+        army.add_formation(FormationLoader.get_for_name("1_box"), 150, 300)
+        army.add_formation(FormationLoader.get_for_name("1_box"), 200, 400)
 
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
@@ -93,9 +93,9 @@ class Battles:
 
         # Right Army
         army = self.create_army((1080, 350))
-        army.add_formation(FormationLoader.get_for_name("basic_1"), 1080, 200)
-        army.add_formation(FormationLoader.get_for_name("basic_1"), 1080, 350)
-        army.add_formation(FormationLoader.get_for_name("basic_1"), 1080, 500)
+        army.add_formation(FormationLoader.get_for_name("2_front"), 1080, 200)
+        army.add_formation(FormationLoader.get_for_name("2_front"), 1080, 350)
+        army.add_formation(FormationLoader.get_for_name("2_front"), 1080, 500)
 
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
@@ -155,8 +155,13 @@ class Battles:
                 soldier1.interact(soldier2)
 
     def clean_up(self):
+        # Take dead soldiers out of their formations
+        dead = [soldier for soldier in self.soldiers.values() if not soldier.is_alive()]
+        for soldier in dead:
+            soldier.formation.remove_soldier(soldier.my_id)
+
         # Remove fully gone soldiers
-        remove_ids = [soldier.my_id for soldier in self.soldiers.values() if soldier.needs_removal()]
+        remove_ids = [soldier.my_id for soldier in dead if soldier.needs_removal()]
         for soldier_id in remove_ids:
             self.remove_soldier(soldier_id)
 
@@ -187,9 +192,11 @@ class Battles:
         if self._mode == GameModes.SET_ARMY_WAYPOINT:
             self.renderer.draw_line(self.active_army.color, self.active_army.pos, cursor_pos)
             self.renderer.draw_circle(self.active_army.color, cursor_pos, Army.WAYPOINT_RADIUS)
+        if self._mode == GameModes.REMOVE:
+            self.renderer.draw_x(Colors.red, cursor_pos, radius=7, width=2)
         elif self.active_formation:
             self.active_formation.set_position(cursor_pos[0], cursor_pos[1])
-            self.active_formation.draw(self.renderer) #TODO don't double draw if moving a placed formation
+            self.active_formation.draw(self.renderer, override_valid=True)
         elif self.active_soldier:
             self.active_soldier.set_position(cursor_pos[0], cursor_pos[1])
             self.active_soldier.draw(self.renderer)
@@ -201,6 +208,8 @@ class Battles:
     def set_mode(self, mode):
         mode_changed = mode != self._mode
         if mode == GameModes.WATCH:
+            self.reset_mode_attrs()
+        if mode == GameModes.PLACE_ARMY:
             self.reset_mode_attrs()
         elif mode == GameModes.PLACE_SOLDIER:
             self.refresh_active_soldier()
@@ -227,7 +236,7 @@ class Battles:
         self.refresh_active_formation()
 
     def remove_army(self, army_id):
-        sldr_ids_to_remove = [sldr.my_id for sldr in self.soldiers if sldr.army.my_id == army_id]
+        sldr_ids_to_remove = [sldr.my_id for sldr in self.soldiers.values() if sldr.army.my_id == army_id]
         for soldier_id in sldr_ids_to_remove:
             del self.soldiers[soldier_id]
         del self.armies[army_id]
@@ -288,8 +297,9 @@ class Battles:
         elif self._mode == GameModes.MOVE_FORMATION:
             self.active_formation.set_position(event.pos[0], event.pos[1])
             self.active_formation.refresh_army_offset()
+            self.active_formation.valid = True
             self.set_mode(GameModes.WATCH)
-        elif self._mode == GameModes.MOVE_FORMATION:
+        elif self._mode == GameModes.REMOVE:
             self.remove_at_pos(event.pos[0], event.pos[1])
 
     def get_at_pos(self, x_pos, y_pos):
@@ -314,6 +324,7 @@ class Battles:
             return True
         if isinstance(obj, Formation):
             self.active_formation = obj
+            self.active_formation.valid = False
             self.set_mode(GameModes.MOVE_FORMATION)
             return True
         return False
@@ -326,6 +337,10 @@ class Battles:
             self.remove_army(obj.my_id)
             return True
         if isinstance(obj, Formation):
+            soldiers = obj.get_soldiers()
+            obj.army.remove_formation(obj)
+            for soldier in soldiers:
+                self.remove_soldier(soldier.my_id)
             obj.army.remove_formation(obj)
             return True
         if isinstance(obj, Soldier):
