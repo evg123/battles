@@ -35,7 +35,7 @@ class Soldier(Movable):
         self.cleanup_timer = Soldier.DEFAULT_CLEANUP_TIME
         self.behavior_tree = None
         self.weapon = None
-        self.sight_range = 150
+        self.sight_range = 200
         self.slot_costs = (0, 0, 0)
         self.flee_range = 0
 

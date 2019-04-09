@@ -28,7 +28,7 @@ class GameModes:
 class Battles:
 
     WINDOW_TITLE = "Battle Demo"
-    SCREEN_SIZE = (1280, 720)
+    SCREEN_SIZE = (1800, 1000)
 
     SOLDIER_TYPES = (Swordsperson, Archer)
 
@@ -69,13 +69,20 @@ class Battles:
 
     def setup(self):
         # Left Army
-        army = self.create_army((200, 350))
-        army.add_formation(FormationLoader.get_for_name("1_box"), 150, 300)
-        army.add_formation(FormationLoader.get_for_name("1_box"), 200, 400)
+        army = self.create_army((200, 500))
+        army.add_formation(FormationLoader.get_for_name("1_box"), 200, 350)
+        army.add_formation(FormationLoader.get_for_name("1_box"), 200, 650)
 
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
         army.formations[0].add_soldier(self.create_soldier(Archer))
         army.formations[0].add_soldier(self.create_soldier(Archer))
         army.formations[0].add_soldier(self.create_soldier(Archer))
@@ -88,15 +95,28 @@ class Battles:
         army.formations[1].add_soldier(self.create_soldier(Swordsperson))
         army.formations[1].add_soldier(self.create_soldier(Swordsperson))
         army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
 
         #army.set_waypoint(1000, 350)
 
         # Right Army
-        army = self.create_army((1080, 350))
-        army.add_formation(FormationLoader.get_for_name("2_front"), 1080, 200)
-        army.add_formation(FormationLoader.get_for_name("2_front"), 1080, 350)
-        army.add_formation(FormationLoader.get_for_name("2_front"), 1080, 500)
+        army = self.create_army((1600, 500))
+        army.add_formation(FormationLoader.get_for_name("1_box"), 1600, 350)
+        army.add_formation(FormationLoader.get_for_name("1_box"), 1600, 650)
 
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
         army.formations[0].add_soldier(self.create_soldier(Swordsperson))
@@ -108,11 +128,17 @@ class Battles:
         army.formations[1].add_soldier(self.create_soldier(Swordsperson))
         army.formations[1].add_soldier(self.create_soldier(Swordsperson))
         army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-
-        army.formations[2].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[2].add_soldier(self.create_soldier(Archer))
-        army.formations[2].add_soldier(self.create_soldier(Archer))
-        army.formations[2].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
 
         #army.set_waypoint(200, 350)
 
