@@ -3,6 +3,7 @@
 **Requirements**
 1. Python >= 3.6
 1. pygame - https://www.pygame.org/wiki/GettingStarted
+1. scipy - https://www.scipy.org
 
 **To run:**  
 execute the run.sh script in the root directory  

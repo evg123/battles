@@ -38,6 +38,7 @@ class Soldier(Movable):
         self.sight_range = 200
         self.slot_costs = (0, 0, 0)
         self.flee_range = 0
+        self.influence = 1.0
 
     def set_position(self, x_pos, y_pos, facing=None):
         super(Soldier, self).set_position(x_pos, y_pos, facing)
