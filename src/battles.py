@@ -11,6 +11,7 @@ from src.army import Army
 from src.soldier import Soldier, Swordsperson, Archer, SoldierLoader
 from src.behavior import BehaviorTree, Blackboard
 from src.formation import FormationLoader, Formation
+from src.influencemap import InfluenceMap
 
 
 # Game states
@@ -50,6 +51,7 @@ class Battles:
         self.formation_types = itertools.cycle(FormationLoader.available_formations)
         self.active_formation_template = FormationLoader.get_next_template()
         self.active_soldier_type = SoldierLoader.get_next_type()
+        self.influence_map = InfluenceMap(self.SCREEN_SIZE, self.soldiers, self.armies)
 
     def create_army(self, position):
         army = Army()
@@ -103,8 +105,6 @@ class Battles:
         army.formations[1].add_soldier(self.create_soldier(Archer))
         army.formations[1].add_soldier(self.create_soldier(Archer))
 
-        #army.set_waypoint(1000, 350)
-
         # Right Army
         army = self.create_army((1600, 500))
         army.add_formation(FormationLoader.get_for_name("1_box"), 1600, 350)
@@ -140,8 +140,6 @@ class Battles:
         army.formations[1].add_soldier(self.create_soldier(Archer))
         army.formations[1].add_soldier(self.create_soldier(Archer))
 
-        #army.set_waypoint(200, 350)
-
     def run(self):
         frame_timer = FrameTimer()
 
@@ -172,6 +170,8 @@ class Battles:
         for soldier in self.soldiers.values():
             soldier.update(delta)
 
+        self.influence_map.update()
+
     def handle_interactions(self):
         #TODO optimize
         for soldier1 in self.soldiers.values():
@@ -199,6 +199,8 @@ class Battles:
 
     def draw(self):
         self.renderer.start_frame()
+
+        self.influence_map.draw(self.renderer)
 
         for army in self.armies.values():
             army.draw(self.renderer)
@@ -275,6 +277,8 @@ class Battles:
     def handle_keypress(self, event):
         if event.key == pygame.K_h:
             self.toggle_help()
+        if event.key == pygame.K_SPACE:
+            self.toggle_pause()
         if event.key == pygame.K_ESCAPE:
             self.set_mode(GameModes.WATCH)
         if event.key == pygame.K_SPACE or event.key == pygame.K_p:
