@@ -35,7 +35,7 @@ class Soldier(Movable):
         self.cleanup_timer = Soldier.DEFAULT_CLEANUP_TIME
         self.behavior_tree = None
         self.weapon = None
-        self.sight_range = 200
+        self.sight_range = 300
         self.slot_costs = (0, 0, 0)
         self.flee_range = 0
         self.influence = 1.0
@@ -78,7 +78,7 @@ class Soldier(Movable):
                 self.weapon.deactivate()
 
     def draw(self, renderer):
-        health_factor = self.health / self.max_health
+        health_factor = (self.health + 30.0) / (self.max_health + 30)
         color = self.army.color if self.army else self.DEFAULT_COLOR
         current_color = [max(int(part * health_factor), 0) for part in color]
         renderer.draw_circle(current_color, self.pos, self.radius)
@@ -92,7 +92,7 @@ class Soldier(Movable):
             self.health = self.max_health
 
     def take_damage(self, damage):
-        self.health -= damage
+        self.health = max(self.health - damage, 0)
 
     def overlaps(self, x_pos, y_pos):
         dist = util.distance(self.pos.x, self.pos.y, x_pos, y_pos)
@@ -145,6 +145,7 @@ class Archer(Soldier):
         self.weapon = Bow()
         self.slot_costs = (10, 100, 0)
         self.flee_range = 100
+        self.influence = 0.75
 
 
 class SoldierLoader:

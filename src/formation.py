@@ -4,7 +4,7 @@ Class representing a formation of soldiers
 import os
 import itertools
 import copy
-from pygame import Vector2
+from pygame import Vector2, Rect
 import src.util as util
 from src.movable import Movable
 from src.behavior import BehaviorTree
@@ -17,7 +17,7 @@ class InvalidFormation(Exception):
 
 class Slot:
 
-    FONT_SIZE = 12
+    FONT_SIZE = 14
     ANY, FIGHTER, RANGED = range(3)
 
     def __init__(self, formation_type, x_off, y_off):
@@ -33,8 +33,9 @@ class Slot:
 
     def draw(self, renderer, formation_pos):
         if renderer.tactics_enabled:
-            #TODO switch to drawing the slot type
-            renderer.draw_text(self.color, formation_pos + self.formation_offset, self.FONT_SIZE, "X")
+            type_char = FormationLoader.SLOT_TYPE_TO_CHAR_MAP[self.type]
+            pos = formation_pos + self.formation_offset
+            renderer.draw_text(Colors.black, pos, self.FONT_SIZE, type_char)
 
     def assign_soldier(self, soldier):
         self.soldier = soldier
@@ -45,7 +46,7 @@ class Slot:
 
 class Formation(Movable):
 
-    ANCHOR_RADIUS = 6
+    ANCHOR_RADIUS = 8
 
     def __init__(self, name):
         super(Formation, self).__init__()
@@ -82,7 +83,10 @@ class Formation(Movable):
         if not self.valid and not override_valid:
             return
         if renderer.tactics_enabled:
-            renderer.draw_circle(self.army.color, self.pos, self.ANCHOR_RADIUS)
+            rect = Rect(0, 0, self.ANCHOR_RADIUS * 2, self.ANCHOR_RADIUS * 2)
+            rect.center = self.pos
+            renderer.draw_rect(self.army.color, rect)
+            renderer.draw_rect(Colors.black, rect, width=1)
         for slot in self.slots:
             slot.draw(renderer, self.pos)
 
@@ -145,11 +149,12 @@ class FormationLoader:
     FORMATION_DIRECTORY = os.path.normpath("./formations")
 
     EMPTY = 'X'
-    SLOT_MAP = {
+    SLOT_CHAR_TO_TYPE_MAP = {
         'A': Slot.ANY,
         'F': Slot.FIGHTER,
         'R': Slot.RANGED,
     }
+    SLOT_TYPE_TO_CHAR_MAP = {val: key for key, val in SLOT_CHAR_TO_TYPE_MAP.items()}
     SLOT_WIDTH = 20
     SLOT_HEIGHT = 20
 
@@ -200,10 +205,10 @@ class FormationLoader:
                     if slot_char in (' ', '\n', FormationLoader.EMPTY):
                         # This space in the grid is not set to a role
                         continue
-                    if slot_char not in FormationLoader.SLOT_MAP:
+                    if slot_char not in FormationLoader.SLOT_CHAR_TO_TYPE_MAP:
                         raise InvalidFormation(f"Formation file {file_path} contains an invalid "
                                                f"slot specifier: '{orig_slot_char}'")
-                    form_type = FormationLoader.SLOT_MAP[slot_char]
+                    form_type = FormationLoader.SLOT_CHAR_TO_TYPE_MAP[slot_char]
                     x_off, y_off = FormationLoader.offsets_from_coords(row, column, formation_width,
                                                                        formation_height)
                     slot = Slot(form_type, x_off, y_off)

@@ -6,12 +6,12 @@ import copy
 import pygame
 from src.util import FrameTimer
 from src.graphics import Renderer, Colors
-from src.ui import Ui
+from src.ui import Ui, Button
 from src.army import Army
 from src.soldier import Soldier, Swordsperson, Archer, SoldierLoader
 from src.behavior import BehaviorTree, Blackboard
 from src.formation import FormationLoader, Formation
-from src.influencemap import InfluenceMap
+from src.influence import InfluenceMap
 
 
 # Game states
@@ -28,8 +28,12 @@ class GameModes:
 
 class Battles:
 
+    DEBUG = True
+
     WINDOW_TITLE = "Battle Demo"
     SCREEN_SIZE = (1800, 1000)
+    BUTTON_SIZE = (100, 60)
+    HELP_BOX_SIZE = (500, 800)
 
     SOLDIER_TYPES = (Swordsperson, Archer)
 
@@ -40,7 +44,7 @@ class Battles:
         self._running = True
         self._paused = False
         self._mode = GameModes.WATCH
-        self._display_help = False
+        self.help_box = None
         self.armies = {}
         self.soldiers = {}
         self.buttons = []
@@ -54,7 +58,10 @@ class Battles:
         self.influence_map = InfluenceMap(self.SCREEN_SIZE, self.soldiers, self.armies)
 
     def create_army(self, position):
-        army = Army()
+        try:
+            army = Army()
+        except RuntimeError:
+            return None
         army.set_position(position[0], position[1])
         army.waypoint.x = position[0]
         army.waypoint.y = position[1]
@@ -69,82 +76,34 @@ class Battles:
         soldier.army = self.active_army
         return soldier
 
-    def setup(self):
-        # Left Army
-        army = self.create_army((200, 500))
-        army.add_formation(FormationLoader.get_for_name("1_box"), 200, 350)
-        army.add_formation(FormationLoader.get_for_name("1_box"), 200, 650)
+    def create_ui(self):
+        self.ui.add_button("Army", self.BUTTON_SIZE, self.set_mode, args=(GameModes.PLACE_ARMY,))
+        self.ui.add_button("Formation", self.BUTTON_SIZE, self.set_mode, args=(GameModes.PLACE_FORMATION,))
+        self.ui.add_button("Soldier", self.BUTTON_SIZE, self.set_mode, args=(GameModes.PLACE_SOLDIER,))
+        self.ui.add_button("Remove", self.BUTTON_SIZE, self.set_mode, args=(GameModes.REMOVE,))
 
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Archer))
-        army.formations[0].add_soldier(self.create_soldier(Archer))
-        army.formations[0].add_soldier(self.create_soldier(Archer))
-        army.formations[0].add_soldier(self.create_soldier(Archer))
+        self.ui.add_button("Influence", self.BUTTON_SIZE, self.toggle_influence)
+        self.ui.add_button("Tactics", self.BUTTON_SIZE, self.toggle_tactics)
 
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Archer))
-        army.formations[1].add_soldier(self.create_soldier(Archer))
-        army.formations[1].add_soldier(self.create_soldier(Archer))
-        army.formations[1].add_soldier(self.create_soldier(Archer))
+        self.ui.add_button("Help", self.BUTTON_SIZE, self.toggle_help)
+        self.ui.add_button("Clear", self.BUTTON_SIZE, self.blank_slate)
 
-        # Right Army
-        army = self.create_army((1600, 500))
-        army.add_formation(FormationLoader.get_for_name("1_box"), 1600, 350)
-        army.add_formation(FormationLoader.get_for_name("1_box"), 1600, 650)
+        self.help_box = self.ui.add_button(self.help_text(), self.HELP_BOX_SIZE, None,
+                                           centered=True, display=False)
 
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[0].add_soldier(self.create_soldier(Archer))
-        army.formations[0].add_soldier(self.create_soldier(Archer))
-        army.formations[0].add_soldier(self.create_soldier(Archer))
-        army.formations[0].add_soldier(self.create_soldier(Archer))
+    def setup(self, create_default_army):
+        self.create_ui()
 
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
-        army.formations[1].add_soldier(self.create_soldier(Archer))
-        army.formations[1].add_soldier(self.create_soldier(Archer))
-        army.formations[1].add_soldier(self.create_soldier(Archer))
-        army.formations[1].add_soldier(self.create_soldier(Archer))
+        if create_default_army:
+            self.create_default_army()
 
     def run(self):
         frame_timer = FrameTimer()
 
         while self._running:
             delta = frame_timer.next_frame()
+            if self.DEBUG:
+                frame_timer.print_fps()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -158,6 +117,8 @@ class Battles:
             self.handle_interactions()
             self.clean_up()
             self.draw()
+
+        print("Quitting")
 
     def update(self, delta):
         # Refresh blackboard shared data
@@ -191,22 +152,34 @@ class Battles:
         for soldier_id in remove_ids:
             self.remove_soldier(soldier_id)
 
+    def blank_slate(self):
+        self.armies.clear()
+        self.soldiers.clear()
+        Army.next_id = 0
+        Soldier.next_id = 0
+
     def toggle_pause(self):
         self._paused = not self._paused
 
     def toggle_help(self):
-        self._display_help = not self._display_help
+        self.help_box.toggle_display()
+
+    def toggle_influence(self):
+        self.renderer.influence_enabled = not self.renderer.influence_enabled
+
+    def toggle_tactics(self):
+        self.renderer.tactics_enabled = not self.renderer.tactics_enabled
 
     def draw(self):
         self.renderer.start_frame()
 
         self.influence_map.draw(self.renderer)
 
-        for army in self.armies.values():
-            army.draw(self.renderer)
-
         for soldier in self.soldiers.values():
             soldier.draw(self.renderer)
+
+        for army in self.armies.values():
+            army.draw(self.renderer)
 
         self.ui.draw()
         self.draw_cursor()
@@ -216,11 +189,14 @@ class Battles:
     def draw_cursor(self):
         cursor_pos = pygame.mouse.get_pos()
         if self._mode == GameModes.PLACE_ARMY:
-            self.renderer.draw_circle(Army.next_color(), cursor_pos, Army.ANCHOR_RADIUS)
-        if self._mode == GameModes.SET_ARMY_WAYPOINT:
+            try:
+                self.renderer.draw_circle(Army.next_color(), cursor_pos, Army.ANCHOR_RADIUS)
+            except RuntimeError:
+                return
+        elif self._mode == GameModes.SET_ARMY_WAYPOINT:
             self.renderer.draw_line(self.active_army.color, self.active_army.pos, cursor_pos)
             self.renderer.draw_circle(self.active_army.color, cursor_pos, Army.WAYPOINT_RADIUS)
-        if self._mode == GameModes.REMOVE:
+        elif self._mode == GameModes.REMOVE:
             self.renderer.draw_x(Colors.red, cursor_pos, radius=7, width=2)
         elif self.active_formation:
             self.active_formation.set_position(cursor_pos[0], cursor_pos[1])
@@ -275,10 +251,10 @@ class Battles:
         del self.soldiers[soldier_id]
 
     def handle_keypress(self, event):
+        if event.key == pygame.K_q:
+            self._running = False
         if event.key == pygame.K_h:
             self.toggle_help()
-        if event.key == pygame.K_SPACE:
-            self.toggle_pause()
         if event.key == pygame.K_ESCAPE:
             self.set_mode(GameModes.WATCH)
         if event.key == pygame.K_SPACE or event.key == pygame.K_p:
@@ -387,8 +363,86 @@ class Battles:
                 return True
         return False
 
+    def help_text(self):
+        return [
+            "line 1",
+            "line 2 - asdf",
+            "line 3",
+        ]
+
+    def create_default_army(self):
+        # Left Army
+        army = self.create_army((200, 500))
+        army.add_formation(FormationLoader.get_for_name("1_box"), 200, 350)
+        army.add_formation(FormationLoader.get_for_name("1_box"), 200, 650)
+
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Archer))
+        army.formations[0].add_soldier(self.create_soldier(Archer))
+        army.formations[0].add_soldier(self.create_soldier(Archer))
+        army.formations[0].add_soldier(self.create_soldier(Archer))
+
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+
+        # Right Army
+        army = self.create_army((1500, 500))
+        army.add_formation(FormationLoader.get_for_name("1_box"), 1500, 350)
+        army.add_formation(FormationLoader.get_for_name("1_box"), 1500, 650)
+
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[0].add_soldier(self.create_soldier(Archer))
+        army.formations[0].add_soldier(self.create_soldier(Archer))
+        army.formations[0].add_soldier(self.create_soldier(Archer))
+        army.formations[0].add_soldier(self.create_soldier(Archer))
+
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Swordsperson))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+        army.formations[1].add_soldier(self.create_soldier(Archer))
+
 
 if __name__ == "__main__":
     BT = Battles()
-    BT.setup()
+    BT.setup(True)
     BT.run()

@@ -3,17 +3,22 @@ Code related to user interface
 """
 
 import pygame
-from scipy import signal
+from scipy.ndimage import gaussian_filter
 
 
 class InfluenceMap:
 
-    GRID_RESOLUTION = 10
+    GRID_RESOLUTION = 25
+    CONVOLUTION_SIGMA = 16
+    MAX_INFLUENCE = 0.01
+    MAX_INFLUENCE_ALPHA = 150
 
     FILTER = [
-        [1, 2, 1],
-        [2, 4, 2],
-        [1, 2, 1],
+        [0.06, 0.12, 0.25, 0.12, 0.06],
+        [0.12, 0.25, 0.50, 0.25, 0.12],
+        [0.25, 0.50, 1.00, 0.50, 0.25],
+        [0.12, 0.25, 0.50, 0.25, 0.12],
+        [0.06, 0.12, 0.25, 0.12, 0.06],
     ]
 
     def __init__(self, screen_size, soldiers, armies):
@@ -44,19 +49,24 @@ class InfluenceMap:
     def _update_maps(self):
         self._maps = self._blank_maps()
         for soldier in self.soldiers.values():
+            if not soldier.is_alive():
+                continue
             row, col = self.position_to_grid(soldier.pos)
+            if row < 0 or row >= self.rows or col < 0 or col >= self.columns:
+                continue
             for army_id, army_map in self._maps.items():
                 # +1 for this army, -1 for an enemy
                 influence_val = 1.0 if army_id is soldier.army.my_id else -1.0
                 army_map[row][col] += influence_val
 
     def _apply_convolution(self):
-        for base_map in self._maps.values():
-            signal.convolve2d(base_map, self.FILTER, mode='same')
+        for army_id, base_map in self._maps.items():
+            self._maps[army_id] = gaussian_filter(base_map, sigma=self.CONVOLUTION_SIGMA,
+                                                  mode="constant")
 
     def draw(self, renderer):
         """Draw the current influence map to the screen"""
-        if not self._maps:
+        if not self._maps or not renderer.influence_enabled:
             return
 
         for row in range(self.rows):
@@ -67,14 +77,15 @@ class InfluenceMap:
                     if army_map[row][col] > influence:
                         influence = army_map[row][col]
                         best = army_id
-                if best:
+                if best is not None:
                     self._draw_army_influence_at(renderer, row, col, best, influence)
 
     def _draw_army_influence_at(self, renderer, row, col, army_id, influence):
         army_color = self.armies[army_id].color
-        color = [min(int(part * influence), 100) for part in army_color]
-        rect = pygame.Rect(row * self.GRID_RESOLUTION, col * self.GRID_RESOLUTION,
+        influence_percent = min(influence / self.MAX_INFLUENCE, 1.0)
+        alpha = self.MAX_INFLUENCE_ALPHA * influence_percent
+        rect = pygame.Rect(col * self.GRID_RESOLUTION, row * self.GRID_RESOLUTION,
                            self.GRID_RESOLUTION, self.GRID_RESOLUTION)
-        renderer.draw_rect(color, rect, 0)
+        renderer.draw_transparent_rect(army_color, rect, alpha)
 
 
