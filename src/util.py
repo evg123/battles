@@ -6,10 +6,12 @@ import math
 
 
 def distance(x1, y1, x2, y2):
+    """Simple distance formula"""
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 
 def normalize_rotation(rotation):
+    """Convert rotation degrees so that it is from -PI to PI"""
     if rotation > 180:
         return rotation - 360
     if rotation <= -180:
@@ -18,6 +20,9 @@ def normalize_rotation(rotation):
 
 
 def vec_to_ints(vec):
+    """Convert a pygame Vector2 to a tuple of ints
+    Also coverts float tuples to int tuples
+    """
     try:
         return int(vec.x), int(vec.y)
     except AttributeError:
@@ -36,6 +41,7 @@ class FrameTimer:
         self.clock = pygame.time.Clock()
 
     def next_frame(self):
+        """Call once per frame to limit fps and compute delta"""
         # Tick will limit framerate and return delta in millis
         delta = self.clock.tick(self.framerate)
 

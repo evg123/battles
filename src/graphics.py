@@ -6,16 +6,20 @@ import src.util as util
 
 
 class PygameColors(type):
+    """Metaclass to enable the Colors class"""
     def __getattr__(cls, item):
         return pygame.color.THECOLORS.get(item)
 
 
 class Colors(metaclass=PygameColors):
+    """Helper for accessing the built-in pygame colors"""
     pass
 
 
 class Renderer:
-
+    """A class to handle drawing to the screen
+    Mostly just wraps pygame functions
+    """
     BACKGROUND_COLOR = Colors.lightgray
 
     def __init__(self, window_title, screen_size):
@@ -63,13 +67,14 @@ class Renderer:
 
 
 class ResourceManager:
-
+    """Holds and caches already loaded resources"""
     fonts = {}
     text_surfs = {}
     rect_surfs = {}
 
     @classmethod
     def get_font(cls, size):
+        """Get or create a font object of the given size"""
         key = size
         val = cls.fonts.get(key, None)
         if val is not None:
@@ -78,9 +83,9 @@ class ResourceManager:
         cls.fonts[key] = font
         return font
 
-
     @classmethod
     def get_text_surface(cls, text, color, size):
+        """Get or create a surface of the rendered text"""
         key = (text, color, size)
         val = cls.text_surfs.get(key, None)
         if val is not None:
@@ -92,6 +97,9 @@ class ResourceManager:
 
     @classmethod
     def get_rect_surf(cls, size, color, alpha):
+        """Get or create a surface of the given size and color.
+        Translucency is determined by alpha.
+        """
         key = (size, color, alpha)
         val = cls.fonts.get(key, None)
         if val is not None:

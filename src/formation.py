@@ -16,7 +16,7 @@ class InvalidFormation(Exception):
 
 
 class Slot:
-
+    """One position for a soldier within a Formation"""
     FONT_SIZE = 14
     ANY, FIGHTER, RANGED = range(3)
 
@@ -27,7 +27,9 @@ class Slot:
         self.color = None
 
     def get_score_for_soldier(self, soldier):
+        """Calculates the score for the soldier based on the soldier type and slot type"""
         if self.soldier:
+            # This slot is already filled
             return None
         return soldier.slot_costs[self.type]
 
@@ -45,7 +47,7 @@ class Slot:
 
 
 class Formation(Movable):
-
+    """A formation within an Army. Is made up of Slots."""
     ANCHOR_RADIUS = 8
 
     def __init__(self, name):
@@ -57,9 +59,11 @@ class Formation(Movable):
         self.valid = True  # Formations are invalidated while being moved
 
     def get_soldiers(self):
+        """Create a list of the Soldiers in this Formation"""
         return [slot.soldier for slot in self.slots if slot.soldier]
 
     def set_army(self, army):
+        """Assign this Formation to the given Army"""
         self.army = army
         self.max_velocity = army.max_velocity * 1.1
         self.max_rotation = army.max_rotation
@@ -67,12 +71,12 @@ class Formation(Movable):
             slot.color = self.army.color
 
     def refresh_army_offset(self):
+        """Update the offset of this Formation relative to the current position of its Army"""
         self.army_offset.x = self.pos.x - self.army.pos.x
         self.army_offset.y = self.pos.y - self.army.pos.y
 
     def update(self, delta, army_pos):
         #TODO update max speed to match slowest unit
-        #TODO or make march speed slower than any unit
         destination = army_pos + self.army_offset
         self.reset_steering()
         BehaviorTree.aim(self, destination)
@@ -87,21 +91,25 @@ class Formation(Movable):
             rect.center = self.pos
             renderer.draw_rect(self.army.color, rect)
             renderer.draw_rect(Colors.black, rect, width=1)
+        # Draw all the Slots
         for slot in self.slots:
             slot.draw(renderer, self.pos)
 
     def add_soldier(self, soldier, snap_to_location=True):
+        """Find the best spot for this soldier and add it to the Formation"""
         if self.assign_to_best_available_slot(soldier, snap_to_location):
             self.reassign()
             return True
         return False
 
     def assign_to_best_available_slot(self, soldier, snap_to_location):
+        """Find the best Slot for this Soldier"""
         best_slot = None
         best_score = float("inf")
         for slot in self.slots:
             score = slot.get_score_for_soldier(soldier)
             if score is not None and score < best_score:
+                # New current best
                 best_slot = slot
                 best_score = score
         if best_slot is not None:
@@ -109,31 +117,38 @@ class Formation(Movable):
             soldier.formation = self
             soldier.army = self.army
             if snap_to_location:
+                # Immediately move the soldier to the Slot position
                 soldier.set_position_vec(self.pos + best_slot.formation_offset)
             return True
         return False
 
     def remove_soldier(self, soldier_id):
+        """Clear this soldier from the Formation"""
         for slot in self.slots:
             if slot.soldier and slot.soldier.my_id == soldier_id:
                 slot.clear_soldier()
         self.reassign()
 
     def anchor_overlaps(self, x_pos, y_pos):
+        """Returns True iff the given position falls within the anchor point"""
         dist = util.distance(self.pos.x, self.pos.y, x_pos, y_pos)
         return dist <= self.ANCHOR_RADIUS
 
     def reassign(self):
+        """Reassign each soldier to the best spot"""
+        # First collect current soldiers
         soldiers = []
         for slot in self.slots:
             if slot.soldier:
                 soldiers.append(slot.soldier)
                 slot.clear_soldier()
+        # Sort by Soldier id so positions are deterministic
         soldiers.sort(key=lambda x: x.my_id)
         for soldier in soldiers:
             self.assign_to_best_available_slot(soldier, snap_to_location=False)
 
     def get_soldier_slot_position(self, soldier_id):
+        """Find the position of this soldier's current Slot"""
         if not self.valid:
             return None
         #TODO slots should be a dict of soldierid to slot
@@ -145,7 +160,7 @@ class Formation(Movable):
 
 
 class FormationLoader:
-
+    """Class that loads formation specification files from disk"""
     FORMATION_DIRECTORY = os.path.normpath("./formations")
 
     EMPTY = 'X'
@@ -163,16 +178,19 @@ class FormationLoader:
 
     @classmethod
     def get_next_template(cls):
+        """Cycle through the loaded Formations"""
         form = next(cls.formation_cycle)
         return copy.deepcopy(form)
 
     @classmethod
     def get_for_name(cls, formation_name):
+        """Get an already loaded formation by the given name"""
         form = cls.available_formations[formation_name]
         return copy.deepcopy(form)
 
     @classmethod
     def find_formations(cls):
+        """Find and load Formations from the designated dir"""
         for base_name in os.listdir(cls.FORMATION_DIRECTORY):
             form_file = os.path.join(cls.FORMATION_DIRECTORY, base_name)
             if not os.path.isfile(form_file):
@@ -185,6 +203,7 @@ class FormationLoader:
 
     @staticmethod
     def offsets_from_coords(row, column, formation_width, formation_height):
+        """Calculate the offset from the anchor based on the position in the formation"""
         pixel_width = formation_width * FormationLoader.SLOT_WIDTH
         pixel_height = formation_height * FormationLoader.SLOT_HEIGHT
         x_off = column * FormationLoader.SLOT_WIDTH - pixel_width // 2
@@ -193,6 +212,7 @@ class FormationLoader:
 
     @staticmethod
     def load(file_path):
+        """Load a Formation from a file"""
         try:
             with open(file_path) as def_file:
                 lines = def_file.readlines()

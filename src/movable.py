@@ -7,6 +7,7 @@ import src.util as util
 
 
 class Movable:
+    """Abstract class used by things that move and are steerable"""
     def __init__(self):
         self.pos = Vector2()
         self.velocity = Vector2()
@@ -32,6 +33,7 @@ class Movable:
         self.rotation_steering = 0
 
     def handle_steering(self, delta):
+        """Apply the current steering values to move this moveable"""
         # Velocity
         # Don't move if we are temporarily stationary
         if self.stationary_timer <= 0:
@@ -62,6 +64,7 @@ class Movable:
         self.rotation += steering
 
     def get_rotation_to_dest(self, destination):
+        """Calculate the angle in degrees from this movable to the destination"""
         direction = destination - self.pos
         facing = Vector2(0, -1)
         facing.rotate_ip(self.facing)

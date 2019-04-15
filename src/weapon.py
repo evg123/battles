@@ -5,9 +5,9 @@ import math
 from pygame import Vector2, Rect
 from src.graphics import Colors
 
-class Weapon:
-    """Abstract base class"""
 
+class Weapon:
+    """Abstract base class for weapons usable by soldiers"""
     def __init__(self):
         # Position of the weapon wielder
         self.pos = Vector2()
@@ -23,6 +23,7 @@ class Weapon:
         raise NotImplementedError()
 
     def wielder_update(self, pos, facing):
+        """Update the position of the weapon based on the passed in position"""
         self.pos.x = pos.x
         self.pos.y = pos.y
         self.angle = facing
@@ -38,7 +39,7 @@ class Weapon:
 
 
 class Sword(Weapon):
-
+    """Melee weapon - sword"""
     INACTIVE = -1.0
     START = 0.0
     FINISHED = 0.75
@@ -67,6 +68,7 @@ class Sword(Weapon):
         self.animate(delta)
 
     def animate(self, delta):
+        """Swing the sword"""
         if self.swing_time > self.FINISHED:
             self.swing_time = self.INACTIVE
 
@@ -93,10 +95,12 @@ class Sword(Weapon):
         renderer.draw_line(self.COLOR, start_pos, end_pos, self.width)
 
     def activate(self):
+        """Start a swing"""
         if self.swing_time == self.INACTIVE:
             self.swing_time = self.START
 
     def deactivate(self):
+        """Cancel a swing"""
         self.swing_time = self.INACTIVE
 
     def hits_circle(self, other_pos, other_radius):
@@ -110,6 +114,7 @@ class Sword(Weapon):
 
 
 class Bow(Weapon):
+    """Ranged weapon - Bow"""
     COLOR = [max(part - 90, 0) for part in Colors.brown]
     FIRING_SPEED = 2.0
     SIZE = 25
@@ -151,6 +156,7 @@ class Bow(Weapon):
             arrow.draw(renderer)
 
     def activate(self):
+        """Fire an arrow if we haven't recently"""
         if self.fire_timer <= 0:
             # Fire an arrow
             arrow = Arrow(self.pos, self.angle)
@@ -170,7 +176,7 @@ class Bow(Weapon):
 
 
 class Arrow(Weapon):
-
+    """Arrow fired by a Bow"""
     COLOR = Colors.brown
 
     def __init__(self, pos, angle):
@@ -186,6 +192,7 @@ class Arrow(Weapon):
         self.hit = False  # has the arrow connected?
 
     def needs_removal(self):
+        """Returns False after it has flown for a while"""
         return self.distance > self.max_distance or self.hit
 
     def update(self, delta):

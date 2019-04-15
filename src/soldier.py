@@ -10,7 +10,7 @@ from src.movable import Movable
 
 
 class Soldier(Movable):
-
+    """Abstract base class for soldiers of different types"""
     DEFAULT_RADIUS = 10
     DEFAULT_CLEANUP_TIME = 10
     DEFAULT_COLOR = Colors.white
@@ -70,9 +70,11 @@ class Soldier(Movable):
             self.weapon.update(delta)
 
     def interact(self, other):
+        """Check interactions with another soldier"""
         if not other.is_alive():
             return
         if self.weapon:
+            # Are we hitting them with our weapon?
             if self.army is not other.army and self.weapon.hits_circle(other.pos, other.radius):
                 other.take_damage(self.weapon.damage)
                 self.weapon.deactivate()
@@ -105,8 +107,11 @@ class Soldier(Movable):
         return not self.is_alive() and self.cleanup_timer < 0
 
     def attack(self):
+        """Try to attack"""
         if self.weapon:
             self.weapon.activate()
+            # We can't move for a short time after attacking
+            # Time is based on our weapon
             self.stationary_timer = self.weapon.stationary_time
 
     def get_attack_range(self):
@@ -118,6 +123,7 @@ class Soldier(Movable):
         return self.flee_range
 
     def cleanup(self):
+        """Prepare the solder for removal"""
         if self.formation:
             self.formation.remove_soldier(self.my_id)
 
@@ -149,6 +155,7 @@ class Archer(Soldier):
 
 
 class SoldierLoader:
+    """Cycles through the supported soldier types"""
     SOLDIER_TYPES = (Swordsperson, Archer)
     soldier_types = itertools.cycle(SOLDIER_TYPES)
 

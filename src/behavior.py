@@ -4,8 +4,6 @@ Implementation of behavior trees
 
 import os
 import json
-from pygame import Vector2
-import src.util as util
 
 
 class InvalidBehaviorTree(Exception):
@@ -13,6 +11,7 @@ class InvalidBehaviorTree(Exception):
 
 
 class Blackboard:
+    """Holds references to game objects needed by Behaviors"""
     SOLDIERS = "soldiers"
     ARMIES = "armies"
     TARGET = "target"
@@ -40,12 +39,14 @@ class Blackboard:
 
 
 class TreeLoader:
+    """Loads Behaviors from disk"""
     @staticmethod
     def file_path_from_name(tree_name):
         return os.path.normpath(f"./behaviors/{tree_name}.json")
 
     @staticmethod
     def node_from_string(node_type_name):
+        """Looks for a Behavior class with the given name"""
         try:
             return getattr(BehaviorTree, node_type_name)()
         except AttributeError:
@@ -53,6 +54,8 @@ class TreeLoader:
 
     @staticmethod
     def load_from_file(tree_name):
+        """Load a Behavior tree from disk.
+        """
         #TODO detect cycles
         file_path = TreeLoader.file_path_from_name(tree_name)
         try:
@@ -66,6 +69,9 @@ class TreeLoader:
 
     @staticmethod
     def load_from_json(bt_json):
+        """Load a Behavior tree from the given JSON.
+        Follows references to files and loads them as well.
+        """
         if isinstance(bt_json, list):
             # This node is a composite
             ntype = bt_json[0]
@@ -89,7 +95,7 @@ class TreeLoader:
 
 
 class BehaviorTree:
-
+    """Holds a tree made up of Behaviors"""
     ARRIVE_SLOW_RADIUS = 100
     ARRIVE_STOP_RADIUS = 25
     AIM_SLOW_RADIUS = 40.0
@@ -99,6 +105,7 @@ class BehaviorTree:
 
     @staticmethod
     def board():
+        """Gets the blackboard for this tree"""
         return BehaviorTree._blackboard
 
     def __init__(self, file_path):
@@ -112,6 +119,7 @@ class BehaviorTree:
     @staticmethod
     def arrive(movable, destination, flee=False,
                slow_radius=ARRIVE_SLOW_RADIUS, stop_radius=ARRIVE_STOP_RADIUS):
+        """Helper with arrive steering behavior"""
         if flee:
             direction = movable.pos - destination
         else:
@@ -131,6 +139,7 @@ class BehaviorTree:
 
     @staticmethod
     def aim(movable, destination, slow_radius=AIM_SLOW_RADIUS, stop_radius=AIM_STOP_RADIUS):
+        """Helper with aim steering behavior"""
         rotation = movable.get_rotation_to_dest(destination)
         rot_size = abs(rotation)
         if rot_size < stop_radius:
@@ -145,6 +154,7 @@ class BehaviorTree:
         return True
 
     class LeafNode:
+        """Parent class for non-composite behaviors"""
         def run(self, soldier, delta):
             raise NotImplementedError()
 
@@ -152,6 +162,7 @@ class BehaviorTree:
             raise InvalidBehaviorTree(f"{self.__class__} does not support adding children")
 
     class CompositeNode:
+        """Parent class for behaviors that hold other behaviors"""
         def __init__(self):
             self.children = []
 
