@@ -1,7 +1,8 @@
 """
 Classes representing weapons like a sword or bow
 """
-from pygame import Vector2
+import math
+from pygame import Vector2, Rect
 from src.graphics import Colors
 
 class Weapon:
@@ -109,8 +110,11 @@ class Sword(Weapon):
 
 
 class Bow(Weapon):
-    COLOR = Colors.brown
+    COLOR = [max(part - 90, 0) for part in Colors.brown]
     FIRING_SPEED = 2.0
+    SIZE = 25
+    CURVE = math.pi * .4
+    ANGLE_FIX = math.pi * 0.5
 
     def __init__(self):
         super(Bow, self).__init__()
@@ -121,7 +125,7 @@ class Bow(Weapon):
         self.stationary_time = 0.2
 
         # Offset from wielder
-        self.dist_offset = 10
+        self.dist_offset = 6
         self.angle_offset = 0
 
     def update(self, delta):
@@ -137,7 +141,11 @@ class Bow(Weapon):
         norm = Vector2(0, -1)
         norm.rotate_ip(self.angle)
         pos = self.pos + norm * self.dist_offset
-        renderer.draw_circle(self.COLOR, pos, 3) #TODO draw arc instead
+        rect = Rect(0, 0, self.SIZE, self.SIZE)
+        rect.center = pos
+        rads = math.radians(self.angle)
+        renderer.draw_arc(self.COLOR, rect, self.ANGLE_FIX - rads - self.CURVE,
+                          self.ANGLE_FIX - rads + self.CURVE, width=3)
 
         for arrow in self.arrows:
             arrow.draw(renderer)
@@ -173,7 +181,7 @@ class Arrow(Weapon):
         self.length = 9
         self.width = 1
         self.flight_speed = 250
-        self.max_distance = 250
+        self.max_distance = 400
         self.distance = 0
         self.hit = False  # has the arrow connected?
 

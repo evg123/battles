@@ -11,7 +11,7 @@ from src.graphics import Colors
 class Army(Movable):
 
     COLORS = [Colors.orangered, Colors.darkgreen, Colors.darkblue, Colors.purple, Colors.yellow]
-    ANCHOR_RADIUS = 12
+    ANCHOR_RADIUS = 11
     WAYPOINT_RADIUS = 15
     MARCH_SPEED = 90
     ROTATION_SPEED = 40
@@ -26,8 +26,10 @@ class Army(Movable):
 
     @classmethod
     def next_color(cls):
-        #TODO handle out of colors
-        return cls.COLORS[cls.next_id]
+        try:
+            return cls.COLORS[cls.next_id]
+        except IndexError:
+            raise RuntimeError("No additional armies can be created")
 
     def __init__(self):
         super(Army, self).__init__()
@@ -54,6 +56,7 @@ class Army(Movable):
     def draw(self, renderer):
         if renderer.tactics_enabled:
             renderer.draw_circle(self.color, self.pos, self.ANCHOR_RADIUS)
+            renderer.draw_circle(self.color, self.pos, self.ANCHOR_RADIUS, width=1)
         for form in self.formations:
             form.draw(renderer)
 

@@ -46,3 +46,6 @@ class FrameTimer:
         delta = min(delta, FrameTimer.MAX_FRAME_TIME)
 
         return delta
+
+    def print_fps(self):
+        print(self.clock.get_fps())
