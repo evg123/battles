@@ -28,7 +28,7 @@ class GameModes:
 
 class Battles:
     """Main class for the game"""
-    DEBUG = True
+    DEBUG = False
 
     WINDOW_TITLE = "Battle Demo"
     SCREEN_SIZE = (1800, 1000)
