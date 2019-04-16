@@ -13,7 +13,7 @@ class Army(Movable):
     COLORS = [Colors.orangered, Colors.darkgreen, Colors.darkblue, Colors.purple, Colors.yellow]
     ANCHOR_RADIUS = 11
     WAYPOINT_RADIUS = 15
-    MARCH_SPEED = 90
+    MARCH_SPEED = 70
     ROTATION_SPEED = 40
 
     next_id = 0
