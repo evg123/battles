@@ -100,6 +100,8 @@ class ResourceManager:
         """Get or create a surface of the given size and color.
         Translucency is determined by alpha.
         """
+        # Truncate alpha to int to limit number of surfaces saved
+        alpha = int(alpha)
         key = (size, color, alpha)
         val = cls.fonts.get(key, None)
         if val is not None:

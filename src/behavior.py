@@ -246,6 +246,21 @@ class BehaviorTree:
                 return False
             return BehaviorTree.arrive(soldier, target.pos, flee=True)
 
+    class SpreadOut(LeafNode):
+        SPREAD_DIST = 20
+
+        def run(self, soldier, delta):
+            soldiers = BehaviorTree.board()[Blackboard.SOLDIERS]
+            for other in soldiers.values():
+                if soldier.my_id == other.my_id or not other.is_alive():
+                    continue
+                displacement = soldier.pos - other.pos
+                if displacement.length() < self.SPREAD_DIST:
+                    displacement.normalize()
+                    steering = displacement * soldier.max_velocity
+                    soldier.add_velocity_steering(steering)
+            return True
+
     class HasTarget(LeafNode):
         def run(self, soldier, delta):
             target = BehaviorTree.board().get_for_id(Blackboard.TARGET, soldier.my_id)

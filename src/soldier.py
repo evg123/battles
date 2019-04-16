@@ -131,9 +131,9 @@ class Soldier(Movable):
 class Swordsperson(Soldier):
     def __init__(self):
         super(Swordsperson, self).__init__()
-        self.max_velocity = 120
+        self.max_velocity = 80
         self.max_rotation = 300
-        self.max_health = 100
+        self.max_health = 120
         self.health = self.max_health
         self.behavior_tree = BehaviorTree("swordsman")
         self.weapon = Sword()
@@ -143,7 +143,7 @@ class Swordsperson(Soldier):
 class Archer(Soldier):
     def __init__(self):
         super(Archer, self).__init__()
-        self.max_velocity = 150
+        self.max_velocity = 80
         self.max_rotation = 300
         self.max_health = 60
         self.health = self.max_health

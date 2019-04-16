@@ -1,4 +1,7 @@
-["Selector",
-	"ranged_attack_sequence",
-	"march_sequence"
+["Sequence",
+	"SpreadOut",
+	["Selector",
+		"ranged_attack_sequence",
+		"march_sequence"
+	]
 ]
