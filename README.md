@@ -1,4 +1,6 @@
-###Tech demo for autonomous army battles.
+### Tech demo for autonomous army battles.
+
+![Demo](https://github.com/evg123/battles/blob/master/media/demo1.png)
 
 **Requirements**
 1. Python >= 3.6
